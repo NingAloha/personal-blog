@@ -13,6 +13,9 @@ jobs:
   build:
     name: Build release
     runs-on: ubuntu-22.04
+    concurrency:
+      group: personal-blog-build-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'push' }}
 
     steps:
       - name: Checkout repository
@@ -84,8 +87,8 @@ jobs:
   deploy:
     name: Deploy production
     if: >
-      github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main'
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: build
     runs-on: ubuntu-22.04
     concurrency:
