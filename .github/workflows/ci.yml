@@ -1,47 +1,161 @@
-name: CI
+name: CI/CD
 
 on:
-    push:
-        branches:
-            - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-    build:
-        runs-on: ubuntu-22.04
+  build:
+    name: Build release
+    runs-on: ubuntu-22.04
 
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
-              with:
-                node-version: '20'
-                cache: 'npm'
-                cache-dependency-path: frontend/package-lock.json
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
 
-            - name: Install frontend dependencies
-              working-directory: frontend
-              run: npm ci
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
 
-            - name: Build frontend
-              working-directory: frontend
-              run: npm run build
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
 
-            - name: Upload frontend artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: frontend-dist
-                path: frontend/dist
+      - name: Verify frontend build
+        run: test -f frontend/dist/index.html
 
-            - name: Test SSH connection
-              uses: appleboy/ssh-action@v1
-              with:
-                host: ${{ secrets.SERVER_HOST }}
-                username: ${{ secrets.SERVER_USER }}
-                key: ${{ secrets.SSH_PRIVATE_KEY }}
-                script: |
-                    whoami
-                    hostname
-                    id -u
+      - name: Install backend production dependencies
+        working-directory: backend
+        run: npm ci --omit=dev
 
+      - name: Package immutable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_dir=release
+          archive="personal-blog-${GITHUB_SHA}.tar.gz"
+
+          mkdir -p "${release_dir}/frontend" "${release_dir}/backend"
+          cp -a frontend/dist "${release_dir}/frontend/dist"
+          rsync -a \
+            --exclude='/.env' \
+            --exclude='/data/' \
+            backend/ "${release_dir}/backend/"
+
+          test -f "${release_dir}/frontend/dist/index.html"
+          test -f "${release_dir}/backend/server.js"
+          test -d "${release_dir}/backend/content"
+          test -d "${release_dir}/backend/node_modules"
+          (
+            cd "${release_dir}/backend"
+            node --check server.js
+          )
+
+          tar -czf "${archive}" -C "${release_dir}" frontend backend
+          tar -tzf "${archive}" > archive-contents.txt
+          grep -qx 'frontend/dist/index.html' archive-contents.txt
+          grep -qx 'backend/server.js' archive-contents.txt
+          grep -qx 'backend/package.json' archive-contents.txt
+          grep -q '^backend/content/' archive-contents.txt
+          grep -q '^backend/node_modules/' archive-contents.txt
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: personal-blog-release-${{ github.sha }}
+          path: personal-blog-${{ github.sha }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy production
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-22.04
+    concurrency:
+      group: personal-blog-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout deployment script
+        uses: actions/checkout@v4
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: personal-blog-release-${{ github.sha }}
+          path: .
+
+      - name: Verify downloaded release artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "personal-blog-${GITHUB_SHA}.tar.gz"
+          cp scripts/deploy-release.sh deploy-release.sh
+
+      - name: Prepare server incoming directory
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          fingerprint: ${{ vars.SERVER_SSH_FINGERPRINT }}
+          script: |
+            set -eu
+            mkdir -p "/srv/personal-blog/.incoming/${{ github.sha }}"
+
+      - name: Upload release and deployment script
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          fingerprint: ${{ vars.SERVER_SSH_FINGERPRINT }}
+          source: personal-blog-${{ github.sha }}.tar.gz,deploy-release.sh
+          target: /srv/personal-blog/.incoming/${{ github.sha }}
+          overwrite: true
+
+      - name: Switch production release
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          fingerprint: ${{ vars.SERVER_SSH_FINGERPRINT }}
+          script: |
+            set -eu
+            bash "/srv/personal-blog/.incoming/${{ github.sha }}/deploy-release.sh" \
+              "${{ github.sha }}" \
+              "/srv/personal-blog/.incoming/${{ github.sha }}/personal-blog-${{ github.sha }}.tar.gz"
+
+      - name: Clean successful incoming upload
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          fingerprint: ${{ vars.SERVER_SSH_FINGERPRINT }}
+          script: |
+            set -eu
+            incoming_dir="/srv/personal-blog/.incoming/${{ github.sha }}"
+            rm -f -- "${incoming_dir}/deploy-release.sh"
+            rm -f -- "${incoming_dir}/personal-blog-${{ github.sha }}.tar.gz"
+            if ! rmdir "${incoming_dir}"; then
+              echo "Warning: incoming directory is not empty: ${incoming_dir}" >&2
+            fi
