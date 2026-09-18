@@ -30,7 +30,7 @@ npm run dev
 - 未设置 `DATA_DIR` 时，统计写入 `backend/data/stats.json`（不存在会自动创建；该文件已在 `.gitignore` 中忽略）。
 
 推荐行为（服务器部署）：
-- 通过环境变量把统计写到独立持久化目录（例如 `/var/lib/personal_blog`），避免被部署脚本的 `git reset/clean` 影响。
+- 通过环境变量把统计写到独立持久化目录（例如 `/var/lib/personal_blog`），使其与 immutable release 完全分离。
 
 ---
 
@@ -50,6 +50,8 @@ personal_blog/
 ├── scripts/
 │   ├── generate-sitemap.mjs  # 根据 Markdown 内容自动生成 sitemap.xml
 │   └── prerender-static.mjs  # 构建后预渲染静态路由
+├── .github/workflows/ci.yml  # 构建、打包与生产发布工作流
+├── scripts/deploy-release.sh # 服务器端原子切换与回滚脚本
 └── README.md
 ```
 
@@ -74,106 +76,60 @@ personal_blog/
 
 ---
 
-## 服务器部署
+## 生产部署（GitHub Actions）
 
-### 前提条件
+生产环境使用 Cloudflare、Caddy、systemd 与 GitHub Actions：GitHub runner 在 Ubuntu 22.04 / Node 22 中构建完整 release，服务器只接收、校验和切换 release，不执行 Git 或 npm 操作。
 
-- Node.js 18+
-- 服务器上已安装 Nginx（或其他反向代理）
-- 建议用 systemd 管理后端进程
-
-### 第一步：克隆并安装依赖
-
-```bash
-git clone https://github.com/NingAloha/personal_blog.git
-cd personal_blog
-
-# 安装后端依赖
-cd backend && npm install --omit=dev && cd ..
-
-# 安装前端依赖并构建
-cd frontend && npm ci && npm run build && cd ..
+```text
+git push main
+  -> GitHub Actions: npm ci, frontend build, backend production dependencies
+  -> immutable release artifact
+  -> fingerprint-verified SSH/SCP
+  -> staging validation
+  -> /srv/personal-blog/releases/<full-sha>
+  -> atomic current symlink switch
+  -> backend restart and health checks
 ```
 
-构建完成后，静态文件在 `frontend/dist/` 目录。  
-另外，`frontend npm run build` 会自动生成 sitemap 并进行预渲染：
-- 输入来源：`backend/content/**/*.md`
-- 输出文件：`frontend/public/sitemap.xml`
-- 预渲染输出：`frontend/dist/`
+每个 release 同时包含 `frontend/dist`、后端运行时文件、`backend/content` 与后端生产 `node_modules`。内容目录既是预渲染输入，也是 API 的运行时来源，因此它们始终来自同一个 commit。
 
-### 第二步：用 systemd 启动后端
+服务器目录：
 
-示例 unit（路径与用户名按你的服务器调整）：
+```text
+/srv/personal-blog/
+├── releases/<full-sha>/
+├── current -> releases/<full-sha>
+└── .incoming/
 
-```ini
-[Unit]
-Description=Personal Blog Backend
-After=network.target
-
-[Service]
-Type=simple
-User=blog
-Group=blog
-WorkingDirectory=/var/www/personal_blog/backend
-Environment=PORT=3000
-Environment=DATA_DIR=/var/lib/personal_blog
-ExecStart=/usr/bin/node server.js
-Restart=on-failure
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
+/var/lib/personal_blog/
+└── stats.json
 ```
 
-配套准备：
+`/var/lib/personal_blog` 是独立业务数据目录，不会被发布流程复制、覆盖或删除。Caddy 从 `current/frontend/dist` 提供静态页面，并将 `/api/*` 反向代理到由 `personal-blog-backend.service` 管理的 Node 服务。
 
-```bash
-sudo mkdir -p /var/lib/personal_blog
-sudo chown -R blog:blog /var/lib/personal_blog
-sudo systemctl daemon-reload
-sudo systemctl enable --now personal-blog-backend
-```
+### 触发方式
 
-### 第三步：配置 Nginx
+- 推送到 `main`：自动完整构建并发布到生产。
+- GitHub Actions 的 `workflow_dispatch`：可在 `main` 上手动重新发布。
+- 连续 push 时，新的提交可以取消仍在构建的旧提交；已进入生产发布的任务不会被取消，并由 production concurrency 串行执行。
 
-将 `frontend/dist/` 作为静态根目录，同时将 `/api` 反代到后端：
+### 发布安全措施
 
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;   # 替换为你的域名或 IP
+- SSH 与 SCP 都使用仓库 Variables 中的服务器 host fingerprint 验证。
+- release 先在 `.incoming` staging 目录解压、校验，再原子提升为 immutable release。
+- `current.new` 经 rename 原子替换 `current`，不会留下入口不存在的窗口。
+- 发布后依次检查 systemd、`127.0.0.1:3000/api/projects`、站点首页和公网 API。
+- 任一发布后检查失败会自动切回上一版 release，重启后端并再次执行健康检查。
+- 成功发布后才清理该次上传的 incoming 文件；历史 release 暂不自动删除。
 
-    root /path/to/personal_blog/frontend/dist;
-    index index.html;
+### GitHub Actions 配置
 
-    # Vue Router 的 history 模式需要 fallback 到 index.html
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
+仓库需要以下既有配置，具体值不应写入仓库：
 
-    # 反向代理 API 请求到 Node.js 后端
-    location /api/ {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
+- Secrets：`SERVER_HOST`、`SERVER_USER`、`SSH_PRIVATE_KEY`
+- Variable：`SERVER_SSH_FINGERPRINT`
 
-修改配置后重载 Nginx：
-
-```bash
-nginx -t && systemctl reload nginx
-```
-
-### 第四步：（可选）配置 HTTPS
-
-推荐使用 [Certbot](https://certbot.eff.org/) 申请免费 Let's Encrypt 证书：
-
-```bash
-certbot --nginx -d your-domain.com
-```
+普通内容或代码更新无需登录服务器，也不需要手动执行 `git pull`、`npm ci`、`npm run build` 或重启服务。
 
 ---
 
@@ -245,72 +201,27 @@ featured: false
 
 ## 更新上线流程
 
-### 情况一：只新增/修改了 Markdown 文章
-
-后端是实时读取文件的，内容页本身可直接生效；  
-但为了让搜索引擎尽快发现新 URL，建议同步重新构建一次前端以更新 sitemap：
+无论是 Markdown 内容、前端还是后端修改，提交并推送到 `main` 即可：
 
 ```bash
-# 在服务器上直接拉取最新内容
-cd ~/personal_blog
-git pull
-
-# 建议：更新 sitemap 并发布新的静态资源
-cd frontend && npm run build && cd ..
+git add -A
+git commit -m "描述你的改动"
+git push origin main
 ```
 
-或者直接在服务器上新建/编辑 `.md` 文件，刷新页面即可看到变化。
-
----
-
-### 情况二：修改了前端代码（Vue 组件、样式等）
-
-前端代码变更需要重新构建，然后 Nginx 会自动托管新的 `dist/`：
-
-```bash
-# 1. 本地提交并推送
-git add -A && git commit -m "描述你的改动" && git push
-
-# 2. 在服务器上拉取并重新构建
-cd ~/personal_blog
-git pull
-cd frontend && npm run build && cd ..
-```
-
-构建完成后，刷新浏览器即可看到更新（可能需要强刷 Ctrl+Shift+R 清除缓存）。
-
----
-
-### 情况三：修改了后端代码（server.js）
-
-```bash
-# 1. 本地提交并推送
-git add -A && git commit -m "描述你的改动" && git push
-
-# 2. 在服务器上拉取并重启后端
-cd ~/personal_blog && git pull
-sudo systemctl restart personal-blog-backend
-```
-
----
-
-### 一键全量更新（前端 + 后端都有改动）
-
-```bash
-cd ~/personal_blog && git pull
-cd frontend && npm run build && cd ..
-sudo systemctl restart personal-blog-backend
-```
+GitHub Actions 会构建并发布同一 SHA 的完整 release。需要重新发布既有 `main` commit 时，在 Actions 页面使用 `workflow_dispatch`；不需要登录服务器执行手工部署命令。
 
 ---
 
 ## 头像
 
-将头像图片命名为 `avatar.jpg` 放入 `frontend/public/` 目录，重新构建前端即可：
+将头像图片命名为 `avatar.jpg` 放入 `frontend/public/` 目录，提交并推送到 `main` 即可：
 
 ```bash
 cp your-avatar.jpg frontend/public/avatar.jpg
-cd frontend && npm run build
+git add frontend/public/avatar.jpg
+git commit -m "chore: update avatar"
+git push origin main
 ```
 
 建议头像使用正方形并压缩到较小体积（建议 `100~200KB`）。  
@@ -354,7 +265,7 @@ curl -I https://ningaloha.com/sitemap.xml
 
 若上线后分数异常回退，优先检查：
 - Cloudflare 是否仍命中旧缓存（`cf-cache-status: HIT` + 旧 `content-length`）
-- 是否忘记执行 `cd frontend && npm run build` 导致 sitemap/静态资源未更新
+- GitHub Actions 的 build 或 deploy 是否失败，导致新 sitemap/静态资源未发布
 - 是否引入了未压缩的大图资源进入首页首屏
 
 ---

@@ -1,7 +1,7 @@
 ---
 title: 个人主页
-summary: 你正在浏览的这个站点。基于前后端分离与 Markdown 内容目录，实现 Wikipedia 风格个人站；补齐主题/语言切换、技术博客中英文内容回退、SEO、sitemap 与静态预渲染，并持续优化 Lighthouse 性能（移动端 99，桌面端文章页约 77）。
-tech: ["Vue 3", "Vite", "Vue Router", "Node.js", "Express", "markdown-it", "gray-matter", "Nginx", "systemd", "Theme System", "i18n", "SEO Meta", "JSON-LD", "Sitemap", "Prerender", "Cloudflare"]
+summary: 你正在浏览的这个站点。基于前后端分离与 Markdown 内容目录，实现 Wikipedia 风格个人站；补齐主题/语言切换、技术博客中英文内容回退、SEO、sitemap、静态预渲染与完整 release 自动发布，并持续优化 Lighthouse 性能（移动端 99，桌面端文章页约 77）。
+tech: ["Vue 3", "Vite", "Vue Router", "Node.js", "Express", "markdown-it", "gray-matter", "Caddy", "systemd", "GitHub Actions", "Theme System", "i18n", "SEO Meta", "JSON-LD", "Sitemap", "Prerender", "Cloudflare"]
 startDate: "2026-04"
 status: 进行中
 link: https://github.com/NingAloha/personal_blog
@@ -32,14 +32,15 @@ featured: false
 - **Node.js + Express**：后端 API 服务
 - **markdown-it**：前端 Markdown 渲染
 - **gray-matter**：解析 Markdown Front-matter 元数据
-- **Nginx**：静态资源托管与 `/api` 反向代理
+- **Caddy**：静态资源托管、HTTPS 与 `/api` 反向代理
 - **systemd**：后端进程托管与重启管理
+- **GitHub Actions**：Node 22 构建完整 release，并自动、原子地发布到生产环境
 
 ## 设计理念
 
 - **内容优先**：减少后台系统复杂度，直接以 Markdown 作为内容源。
 - **可维护优先**：常见变更（新增文章、改摘要、改标签）不依赖数据库迁移。
-- **部署边界清晰**：前端可独立构建，后端可独立重启，Nginx 负责统一入口。
+- **部署边界清晰**：前端产物、后端代码、内容与生产依赖作为同一 immutable release 发布；Caddy 负责统一入口。
 - **阅读体验一致**：支持浅色/黑夜主题切换，并保留 Wikipedia 风格的克制排版。
 
 这套取舍背后其实对应了两篇随笔的思路：  
@@ -58,6 +59,8 @@ featured: false
 - 已提供标准 `robots.txt`、自动生成 `sitemap.xml` 与静态预渲染产物
 - 最近一次性能基线：Lighthouse 移动端 99、桌面端（文章详情页）约 77
 - 统计数据属于运行时状态：部署时不依赖 Git 目录；线上通过 `DATA_DIR` 指向独立持久化路径
+- `main` 分支的推送会在 GitHub Actions 中完成前后端构建、打包完整 release 并自动部署；服务器不再承担 Git 拉取或 npm 构建
+- 发布采用 staging 校验、`current` 原子切换、服务与公网健康检查；失败时自动回滚到上一版 release
 
 ## SEO 与性能优化记录
 
