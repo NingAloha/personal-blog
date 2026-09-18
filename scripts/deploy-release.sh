@@ -156,6 +156,8 @@ else
   staging_dir=$(mktemp -d "${incoming_dir}/release-${release_sha}.XXXXXX")
   tar -xzf "${archive_path}" --no-same-owner --no-same-permissions -C "${staging_dir}"
   verify_release "${staging_dir}"
+  # mktemp -d defaults to 0700; Caddy needs execute/traverse access to the release root.
+  chmod 755 "${staging_dir}"
   mv -T "${staging_dir}" "${release_dir}"
   echo "Promoted validated release: ${release_dir}"
 fi
