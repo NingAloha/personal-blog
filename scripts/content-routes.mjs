@@ -18,7 +18,10 @@ export function getContentRoutes() {
   const routes = []
   for (const cfg of CONTENT_CONFIGS) {
     const dirPath = join(CONTENT_ROOT, cfg.dir)
-    const files = readdirSync(dirPath).filter((file) => file.endsWith('.md')).sort()
+    const files = readdirSync(dirPath)
+      .filter((file) => file.endsWith('.md'))
+      .filter((file) => !file.endsWith('.en.md'))
+      .sort()
     for (const file of files) {
       routes.push(`${cfg.basePath}/${basename(file, '.md')}`)
     }

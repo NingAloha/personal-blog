@@ -18,13 +18,21 @@ function withLang(path, lang) {
   return `${path}${separator}lang=${encodeURIComponent(lang)}`
 }
 
+function getContentList(type, lang) {
+  return get(withLang(`/${type}`, lang))
+}
+
+function getContentItem(type, slug, lang) {
+  return get(withLang(`/${type}/${slug}`, lang))
+}
+
 export const api = {
-  getProjects: () => get('/projects'),
-  getProject: (slug) => get(`/projects/${slug}`),
-  getEssays: () => get('/essays'),
-  getEssay: (slug) => get(`/essays/${slug}`),
-  getTechBlogs: (lang) => get(withLang('/tech-blogs', lang)),
-  getTechBlog: (slug, lang) => get(withLang(`/tech-blogs/${slug}`, lang)),
+  getProjects: (lang) => getContentList('projects', lang),
+  getProject: (slug, lang) => getContentItem('projects', slug, lang),
+  getEssays: (lang) => getContentList('essays', lang),
+  getEssay: (slug, lang) => getContentItem('essays', slug, lang),
+  getTechBlogs: (lang) => getContentList('tech-blogs', lang),
+  getTechBlog: (slug, lang) => getContentItem('tech-blogs', slug, lang),
   getSiteStats: () => get('/stats/site'),
   trackSiteVisit: () => post('/stats/site/visit'),
   getArticleStats: (slug) => get(`/stats/article/${slug}`),

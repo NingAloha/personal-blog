@@ -146,19 +146,29 @@ async function loadTechBlogs() {
   } catch {}
 }
 
+async function loadProjects() {
+  try {
+    const projects = await api.getProjects(locale.value)
+    projectCount.value = projects.length
+    featuredProject.value = projects.find((p) => p.featured) || projects[0] || null
+  } catch {}
+}
+
+async function loadEssays() {
+  try {
+    const essays = await api.getEssays(locale.value)
+    essayCount.value = essays.length
+    featuredEssay.value = essays.find((e) => e.featured) || essays[0] || null
+  } catch {}
+}
+
 onMounted(async () => {
   trySetSiteVisitsFromStorage()
   window.addEventListener('site-visits-updated', handleSiteVisitsUpdated)
 
-  api.getProjects().then((projects) => {
-    projectCount.value = projects.length
-    featuredProject.value = projects.find((p) => p.featured) || projects[0] || null
-  }).catch(() => {})
+  loadProjects()
 
-  api.getEssays().then((essays) => {
-    essayCount.value = essays.length
-    featuredEssay.value = essays.find((e) => e.featured) || essays[0] || null
-  }).catch(() => {})
+  loadEssays()
 
   loadTechBlogs()
 
@@ -167,7 +177,11 @@ onMounted(async () => {
   }).catch(() => {})
 })
 
-watch(locale, loadTechBlogs)
+watch(locale, () => {
+  loadProjects()
+  loadEssays()
+  loadTechBlogs()
+})
 
 onBeforeUnmount(() => {
   window.removeEventListener('site-visits-updated', handleSiteVisitsUpdated)

@@ -43,7 +43,10 @@ function parseFrontmatter(raw) {
 }
 
 function readContentType(dir, basePath) {
-  const files = readdirSync(join(CONTENT_ROOT, dir)).filter((file) => file.endsWith('.md')).sort()
+  const files = readdirSync(join(CONTENT_ROOT, dir))
+    .filter((file) => file.endsWith('.md'))
+    .filter((file) => !file.endsWith('.en.md'))
+    .sort()
   return files.map((file) => {
     const slug = basename(file, '.md')
     const raw = readFileSync(join(CONTENT_ROOT, dir, file), 'utf-8')

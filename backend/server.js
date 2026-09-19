@@ -79,65 +79,65 @@ function sortItems(a, b) {
   return db.localeCompare(da)
 }
 
-function readLocalizedTechBlogs(locale = 'zh') {
-  const dir = join(CONTENT_DIR, 'tech-blogs')
+const CONTENT_TYPES = new Set(['projects', 'essays', 'tech-blogs'])
+
+function contentDir(type) {
+  if (!CONTENT_TYPES.has(type)) {
+    throw new Error('Unknown content type')
+  }
+  return join(CONTENT_DIR, type)
+}
+
+function readLocalizedVariants(type) {
+  const dir = contentDir(type)
   const groups = new Map()
 
   for (const file of readdirSync(dir).filter((f) => f.endsWith('.md'))) {
     const { slug, locale: fileLocale } = splitLocalizedMarkdownName(file)
-    const raw = readFileSync(join(dir, file), 'utf-8')
-    const { data, content } = matter(raw)
     const variants = groups.get(slug) || {}
-    variants[fileLocale] = { slug, ...data, content }
+    variants[fileLocale] = join(dir, file)
     groups.set(slug, variants)
   }
 
+  return groups
+}
+
+function chooseLocalizedFile(variants, locale) {
+  return locale === 'en' ? (variants.en || variants.zh) : variants.zh
+}
+
+function readMarkdownItem(slug, file, includeContent = false) {
+  const raw = readFileSync(file, 'utf-8')
+  const { data, content } = matter(raw)
+  return includeContent ? { slug, ...data, content } : { slug, ...data }
+}
+
+// All content types use the same base slug. English files are optional and
+// fall back to their Chinese counterpart when no .en.md variant exists.
+function readLocalizedItems(type, locale = 'zh') {
+  const groups = readLocalizedVariants(type)
   return Array.from(groups.entries())
     .map(([slug, variants]) => {
-      const chosen = locale === 'en' ? (variants.en || variants.zh) : variants.zh
-      if (!chosen) return null
-      return { slug, ...chosen }
+      const file = chooseLocalizedFile(variants, locale)
+      return file ? readMarkdownItem(slug, file) : null
     })
     .filter(Boolean)
     .sort(sortItems)
 }
 
-function readLocalizedTechBlog(slug, locale = 'zh') {
+function readLocalizedItem(type, slug, locale = 'zh') {
   const normalizedSlug = splitLocalizedMarkdownName(`${slug}.md`).slug
-  const items = readLocalizedTechBlogs(locale)
-  const matched = items.find((item) => item.slug === normalizedSlug)
-  if (!matched) {
+  const variants = readLocalizedVariants(type).get(normalizedSlug)
+  const file = variants && chooseLocalizedFile(variants, locale)
+  if (!file) {
     throw new Error('Not found')
   }
-  return matched
+  return readMarkdownItem(normalizedSlug, file, true)
 }
 
-// ── 通用：读取某类内容的所有文件 ──
-function readAllItems(type) {
-  const dir = join(CONTENT_DIR, type)
-  return readdirSync(dir)
-    .filter((f) => f.endsWith('.md'))
-    .map((file) => {
-      const slug = basename(file, '.md')
-      const raw = readFileSync(join(dir, file), 'utf-8')
-      const { data } = matter(raw)
-      return { slug, ...data }
-    })
-    .sort(sortItems)
-}
-
-// ── 通用：读取单个文件（包含 content） ──
-function readItem(type, slug) {
-  const file = join(CONTENT_DIR, type, `${slug}.md`)
-  const raw = readFileSync(file, 'utf-8')
-  const { data, content } = matter(raw)
-  return { slug, ...data, content }
-}
-
-// ── 项目 ──
-app.get('/api/projects', (_req, res) => {
+app.get('/api/projects', (req, res) => {
   try {
-    res.json(readAllItems('projects'))
+    res.json(readLocalizedItems('projects', normalizeLocale(req.query.lang)))
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -145,16 +145,16 @@ app.get('/api/projects', (_req, res) => {
 
 app.get('/api/projects/:slug', (req, res) => {
   try {
-    res.json(readItem('projects', req.params.slug))
+    res.json(readLocalizedItem('projects', req.params.slug, normalizeLocale(req.query.lang)))
   } catch {
     res.status(404).json({ error: 'Not found' })
   }
 })
 
 // ── 随笔 ──
-app.get('/api/essays', (_req, res) => {
+app.get('/api/essays', (req, res) => {
   try {
-    res.json(readAllItems('essays'))
+    res.json(readLocalizedItems('essays', normalizeLocale(req.query.lang)))
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -162,7 +162,7 @@ app.get('/api/essays', (_req, res) => {
 
 app.get('/api/essays/:slug', (req, res) => {
   try {
-    res.json(readItem('essays', req.params.slug))
+    res.json(readLocalizedItem('essays', req.params.slug, normalizeLocale(req.query.lang)))
   } catch {
     res.status(404).json({ error: 'Not found' })
   }
@@ -171,7 +171,7 @@ app.get('/api/essays/:slug', (req, res) => {
 // ── 技术博客 ──
 app.get('/api/tech-blogs', (req, res) => {
   try {
-    res.json(readLocalizedTechBlogs(normalizeLocale(req.query.lang)))
+    res.json(readLocalizedItems('tech-blogs', normalizeLocale(req.query.lang)))
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -179,7 +179,7 @@ app.get('/api/tech-blogs', (req, res) => {
 
 app.get('/api/tech-blogs/:slug', (req, res) => {
   try {
-    res.json(readLocalizedTechBlog(req.params.slug, normalizeLocale(req.query.lang)))
+    res.json(readLocalizedItem('tech-blogs', req.params.slug, normalizeLocale(req.query.lang)))
   } catch {
     res.status(404).json({ error: 'Not found' })
   }

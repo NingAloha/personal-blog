@@ -64,7 +64,10 @@ function buildDynamicEntries() {
 
   for (const cfg of contentConfigs) {
     const dirPath = join(CONTENT_ROOT, cfg.dir)
-    const files = readdirSync(dirPath).filter((f) => f.endsWith('.md')).sort()
+    const files = readdirSync(dirPath)
+      .filter((file) => file.endsWith('.md'))
+      .filter((file) => !file.endsWith('.en.md'))
+      .sort()
 
     for (const file of files) {
       const slug = basename(file, '.md')

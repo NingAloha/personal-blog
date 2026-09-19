@@ -32,16 +32,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { api } from '../utils/api'
-import { t } from '../i18n'
+import { locale, t } from '../i18n'
 
 const projects = ref([])
 const loading = ref(true)
-onMounted(async () => {
-  projects.value = await api.getProjects()
-  loading.value = false
-})
+
+async function load() {
+  loading.value = true
+  try {
+    projects.value = await api.getProjects(locale.value)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(load)
+watch(locale, load)
 </script>
 
 <style scoped>

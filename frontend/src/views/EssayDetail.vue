@@ -46,7 +46,7 @@ async function load(slug) {
   loading.value = true
   notFound.value = false
   try {
-    essay.value = await api.getEssay(slug)
+    essay.value = await api.getEssay(slug, locale.value)
     const path = `/essays/${slug}`
     applySeo({
       title: essay.value.title,
@@ -84,22 +84,7 @@ onMounted(() => load(route.params.slug))
 watch(() => route.params.slug, (slug) => slug && load(slug))
 watch(locale, () => {
   const slug = route.params.slug
-  if (!slug || !essay.value) return
-  const path = `/essays/${slug}`
-  applySeo({
-    title: essay.value.title,
-    description: essay.value.summary,
-    path,
-    type: 'article',
-    jsonLd: buildArticleJsonLd({
-      title: essay.value.title,
-      summary: essay.value.summary,
-      path,
-      datePublished: essay.value.date,
-      tags: essay.value.tags,
-      articleType: 'Article',
-    }),
-  })
+  if (slug) load(slug)
 })
 </script>
 

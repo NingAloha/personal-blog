@@ -47,7 +47,7 @@ async function load(slug) {
   loading.value = true
   notFound.value = false
   try {
-    project.value = await api.getProject(slug)
+    project.value = await api.getProject(slug, locale.value)
     const path = `/projects/${slug}`
     const applyArticleSeo = () =>
       applySeo({
@@ -87,22 +87,7 @@ onMounted(() => load(route.params.slug))
 watch(() => route.params.slug, (slug) => slug && load(slug))
 watch(locale, () => {
   const slug = route.params.slug
-  if (!slug || !project.value) return
-  const path = `/projects/${slug}`
-  applySeo({
-    title: project.value.title,
-    description: project.value.summary,
-    path,
-    type: 'article',
-    jsonLd: buildArticleJsonLd({
-      title: project.value.title,
-      summary: project.value.summary,
-      path,
-      datePublished: project.value.startDate,
-      tags: project.value.tech,
-      articleType: 'Article',
-    }),
-  })
+  if (slug) load(slug)
 })
 </script>
 
