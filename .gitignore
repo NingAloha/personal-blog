@@ -10,5 +10,8 @@ backend/data/stats.json
 # builds
 frontend/dist/
 frontend/public/content/
+frontend/public/llms.txt
+frontend/public/.well-known/ai-catalog.json
+frontend/public/.well-known/ard.json
 frontend/public/robots.txt
 frontend/public/sitemap.xml

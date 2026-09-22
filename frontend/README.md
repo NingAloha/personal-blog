@@ -13,6 +13,10 @@ npm run preview
 - `npm run build` 会先生成 `robots.txt` 与站点地图，再进行 Vite 构建和预渲染。
 - `generate:robots` 根据 `src/config/site.js` 生成：
   - `public/robots.txt`
+- `generate:ai-discovery` 根据 `src/config/site.js` 生成：
+  - `public/llms.txt`
+  - `public/.well-known/ai-catalog.json`
+  - `public/.well-known/ard.json`
 - `generate:sitemap` 会读取仓库根目录下 `backend/content/**/*.md` 并生成：
   - `public/sitemap.xml`
 

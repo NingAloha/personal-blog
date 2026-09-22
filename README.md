@@ -224,6 +224,7 @@ featured: false
 - 详情页会注入结构化数据（JSON-LD，`Article/BlogPosting`）。
 - 构建时会根据 `frontend/src/config/site.js` 生成 `frontend/public/robots.txt`，声明站点可抓取并指向站点地图。
 - 站点地图由 `scripts/generate-sitemap.mjs` 自动生成，不建议手改 `frontend/public/sitemap.xml`。
+- 构建时会生成 `llms.txt` 与空的 ARD manifest；它们仅描述公开站点文档，不声明 MCP、agent 或其他可调用资源。
 
 ## 更新上线流程
 
