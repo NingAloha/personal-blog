@@ -270,9 +270,15 @@ curl -I https://ningaloha.com/sitemap.xml
 
 ---
 
-## 内容版权声明
+## License
 
-本仓库代码用于开源协作，但 `backend/content/` 下的文章与文字内容不因仓库公开而自动授权他人使用。  
-未经作者书面授权，禁止对文章内容进行转载、复制、二次分发、商用或用于模型训练。
+The repository's MIT License applies to its source code and project
+documentation, except for the personal writings and media listed in
+[CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md).
 
-详细条款见 [CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md)。
+Personal writings and other original content under `backend/content/**` are
+excluded from the MIT License and remain All Rights Reserved. The author's
+personal avatar at `frontend/public/avatar.jpg` is also All Rights Reserved.
+
+If you use this repository as a personal blog template, please remove or
+replace the original content under `backend/content/**`.
