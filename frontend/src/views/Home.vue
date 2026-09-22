@@ -9,7 +9,7 @@
       <div class="infobox-image">
         <!-- 替换为你的头像 URL -->
         <img
-          src="/avatar.jpg"
+          :src="siteConfig.avatarPath"
           alt="avatar"
           width="900"
           height="900"
@@ -29,7 +29,7 @@
         </tbody>
       </table>
       <div class="infobox-links">
-        <a href="https://github.com/NingAloha" target="_blank" rel="noopener">GitHub</a>
+        <a :href="siteConfig.githubUrl" target="_blank" rel="noopener">GitHub</a>
         <!-- 可以加更多链接 -->
       </div>
     </aside>
@@ -107,6 +107,7 @@
 
 <script setup>
 import { ref, onBeforeUnmount, onMounted, watch } from 'vue'
+import { siteConfig } from '../config/site.js'
 import { api } from '../utils/api'
 import { locale, t } from '../i18n'
 

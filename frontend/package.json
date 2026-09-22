@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run sync:content-assets && vite",
+    "dev": "npm run sync:content-assets && npm run generate:robots && vite",
     "prebuild": "npm run sync:content-assets",
     "sync:content-assets": "node ../scripts/sync-content-assets.mjs",
+    "generate:robots": "node ../scripts/generate-robots.mjs",
     "generate:sitemap": "node ../scripts/generate-sitemap.mjs",
     "build:client": "vite build",
-    "build": "npm run generate:sitemap && npm run build:client && node ../scripts/prerender-static.mjs",
+    "build": "npm run generate:robots && npm run generate:sitemap && npm run build:client && node ../scripts/prerender-static.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

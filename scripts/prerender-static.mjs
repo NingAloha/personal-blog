@@ -2,10 +2,9 @@ import { readdirSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { join, resolve, basename, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { renderMarkdown } from '../frontend/src/utils/markdown.js'
-import { buildAbsoluteUrl, normalizeSitePath } from '../frontend/src/utils/url.js'
+import { siteConfig } from '../frontend/src/config/site.js'
+import { buildAbsoluteUrl, buildAssetUrl, normalizeSitePath } from '../frontend/src/utils/url.js'
 
-const SITE_NAME = '寧中亙的个人主页'
-const DEFAULT_DESCRIPTION = 'NingAloha 的个人站点，包含项目、文学随笔与技术博客。'
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(SCRIPT_DIR, '..')
 const CONTENT_ROOT = join(ROOT, 'backend', 'content')
@@ -13,7 +12,7 @@ const DIST_ROOT = join(ROOT, 'frontend', 'dist')
 const TEMPLATE_PATH = join(DIST_ROOT, 'index.html')
 
 function truncate(text, max = 160) {
-  if (!text) return DEFAULT_DESCRIPTION
+  if (!text) return siteConfig.description
   return text.length > max ? `${text.slice(0, max - 1)}…` : text
 }
 
@@ -66,17 +65,17 @@ function sortForLists(items) {
 }
 
 function injectHeadAndBody(template, { title, description, path, bodyHtml }) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : SITE_NAME
+  const fullTitle = title ? `${title} | ${siteConfig.siteName}` : siteConfig.siteName
   const canonical = buildAbsoluteUrl(path)
   const desc = truncate(description)
-  const ogImage = buildAbsoluteUrl('/avatar.jpg')
+  const ogImage = buildAssetUrl(siteConfig.avatarPath)
 
   let html = template
   html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${fullTitle}</title>`)
   html = html.replace(/<link rel="canonical" href="[^"]*"\s*\/?>/i, `<link rel="canonical" href="${canonical}" />`)
   html = html.replace(/<meta name="description" content="[^"]*"\s*\/?>/i, `<meta name="description" content="${desc}" />`)
   html = html.replace('</head>', [
-    `  <meta property="og:site_name" content="${SITE_NAME}">`,
+    `  <meta property="og:site_name" content="${siteConfig.siteName}">`,
     `  <meta property="og:title" content="${fullTitle}">`,
     `  <meta property="og:description" content="${desc}">`,
     `  <meta property="og:type" content="website">`,
@@ -155,7 +154,7 @@ const pages = [
   {
     path: '/',
     title: '首页',
-    description: DEFAULT_DESCRIPTION,
+    description: siteConfig.description,
     bodyHtml: renderHome(projects, essays, techBlogs),
   },
   {
@@ -179,19 +178,19 @@ const pages = [
   ...projects.map((item) => ({
     path: item.path,
     title: item.title || item.slug,
-    description: item.summary || DEFAULT_DESCRIPTION,
+    description: item.summary || siteConfig.description,
     bodyHtml: renderDetail(item, '项目', '/projects'),
   })),
   ...essays.map((item) => ({
     path: item.path,
     title: item.title || item.slug,
-    description: item.summary || DEFAULT_DESCRIPTION,
+    description: item.summary || siteConfig.description,
     bodyHtml: renderDetail(item, '文学随笔', '/essays'),
   })),
   ...techBlogs.map((item) => ({
     path: item.path,
     title: item.title || item.slug,
-    description: item.summary || DEFAULT_DESCRIPTION,
+    description: item.summary || siteConfig.description,
     bodyHtml: renderDetail(item, '技术博客', '/tech-blogs'),
   })),
 ]

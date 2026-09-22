@@ -1,4 +1,4 @@
-export const SITE_URL = 'https://ningaloha.com'
+import { normalizeSiteUrl, siteConfig } from '../config/site.js'
 
 export function normalizeSitePath(path = '/') {
   if (!path || path === '/') return '/'
@@ -12,5 +12,9 @@ export function normalizeSitePath(path = '/') {
 }
 
 export function buildAbsoluteUrl(path = '/') {
-  return new URL(normalizeSitePath(path), SITE_URL).toString()
+  return new URL(normalizeSitePath(path), normalizeSiteUrl(siteConfig.siteUrl)).toString()
+}
+
+export function buildAssetUrl(path = siteConfig.avatarPath) {
+  return new URL(path, normalizeSiteUrl(siteConfig.siteUrl)).toString()
 }

@@ -9,7 +9,9 @@ readonly releases_dir=/srv/personal-blog/releases
 readonly incoming_dir=/srv/personal-blog/.incoming
 readonly current_link=/srv/personal-blog/current
 readonly current_new_link=/srv/personal-blog/current.new
-readonly site_url=https://ningaloha.com
+site_url=${SITE_URL:?SITE_URL must be set}
+site_url=${site_url%/}
+readonly site_url
 readonly release_dir="${releases_dir}/${release_sha}"
 
 if [[ ! "${release_sha}" =~ ^[0-9a-f]{40}$ ]]; then

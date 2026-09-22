@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { siteConfig } from '../config/site.js'
 
 const STORAGE_KEY = 'locale'
 const SUPPORTED = ['zh', 'en']
@@ -60,8 +61,8 @@ function format(template, params) {
 const messages = {
   zh: {
     site: {
-      name: '寧中亙的个人主页',
-      description: 'NingAloha 的个人站点，包含项目、文学随笔与技术博客。',
+      name: siteConfig.siteName,
+      description: siteConfig.description,
     },
     nav: {
       home: '主页',
@@ -94,7 +95,7 @@ const messages = {
         callMe: '可以叫我',
         iMayBe: '我也许是',
         from: '我来自于',
-        nameValue: 'NingAloha(寧中亙)',
+        nameValue: siteConfig.authorNameZh,
         rolesValue: '开发者/随笔作者/吉他手/摄影师',
         fromValue: '中国·汕头',
         projectCount: '项目做了',
@@ -163,8 +164,8 @@ const messages = {
   },
   en: {
     site: {
-      name: "NingAloha's Personal Site",
-      description: "NingAloha's personal site: projects, essays, and tech blogs.",
+      name: siteConfig.siteNameEn,
+      description: siteConfig.descriptionEn,
     },
     nav: {
       home: 'Home',
@@ -197,7 +198,7 @@ const messages = {
         callMe: 'Call me',
         iMayBe: 'I might be',
         from: 'From',
-        nameValue: 'NingAloha',
+        nameValue: siteConfig.authorName,
         rolesValue: 'Developer / essay writer / guitarist / photographer',
         fromValue: 'Shantou, China',
         projectCount: 'Projects',
@@ -245,7 +246,7 @@ const messages = {
     seo: {
       home: {
         title: 'Home',
-        description: "NingAloha's personal site: projects, essays, and tech blogs.",
+        description: siteConfig.descriptionEn,
       },
       projects: {
         title: 'Projects',

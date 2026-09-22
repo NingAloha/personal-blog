@@ -40,7 +40,8 @@ npm run dev
 
 - `backend/content/**` 下的原作者文章与项目内容。
 - `frontend/public/avatar.jpg` 中的个人头像。
-- 站点名称、个人信息、GitHub 链接、域名及相关站点配置。
+- `frontend/src/config/site.js` 中的主要站点信息：域名、站点标题、作者名、GitHub
+  地址与 description。
 
 原作者的文字与媒体内容不包含在 MIT License 的授权范围内；详见
 [CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md)。
@@ -152,7 +153,7 @@ git push main
 仓库需要以下既有配置，具体值不应写入仓库：
 
 - Secrets：`SERVER_HOST`、`SERVER_USER`、`SSH_PRIVATE_KEY`
-- Variable：`SERVER_SSH_FINGERPRINT`
+- Variables：`SERVER_SSH_FINGERPRINT`、`SITE_URL`（生产健康检查使用的公开站点 URL）
 
 普通内容或代码更新无需登录服务器，也不需要手动执行 `git pull`、`npm ci`、`npm run build` 或重启服务。
 
@@ -221,7 +222,7 @@ featured: false
 
 - 前端路由切换时会动态更新页面 `title`、`description`、`canonical`、Open Graph、Twitter Card。
 - 详情页会注入结构化数据（JSON-LD，`Article/BlogPosting`）。
-- `frontend/public/robots.txt` 已声明站点可抓取并指向站点地图。
+- 构建时会根据 `frontend/src/config/site.js` 生成 `frontend/public/robots.txt`，声明站点可抓取并指向站点地图。
 - 站点地图由 `scripts/generate-sitemap.mjs` 自动生成，不建议手改 `frontend/public/sitemap.xml`。
 
 ## 更新上线流程

@@ -1,5 +1,6 @@
 import { t } from '../i18n'
-import { buildAbsoluteUrl } from './url'
+import { siteConfig } from '../config/site.js'
+import { buildAbsoluteUrl, buildAssetUrl } from './url'
 
 function getSiteName() {
   return t('site.name')
@@ -57,7 +58,7 @@ export function applySeo({ title, description, path = '/', type = 'website', ima
   const fullTitle = title ? `${title} | ${siteName}` : siteName
   const canonical = buildAbsoluteUrl(path)
   const desc = truncate(description)
-  const ogImage = image || buildAbsoluteUrl('/avatar.jpg')
+  const ogImage = image || buildAssetUrl(siteConfig.avatarPath)
 
   document.title = fullTitle
   setCanonical(canonical)
@@ -91,13 +92,13 @@ export function buildArticleJsonLd({ title, summary, path, datePublished, tags, 
     url,
     author: {
       '@type': 'Person',
-      name: 'NingAloha',
+      name: siteConfig.authorName,
     },
     publisher: {
       '@type': 'Person',
-      name: 'NingAloha',
+      name: siteConfig.authorName,
     },
-    image: buildAbsoluteUrl('/avatar.jpg'),
+    image: buildAssetUrl(siteConfig.avatarPath),
     keywords: Array.isArray(tags) ? tags.join(', ') : undefined,
   }
 }
