@@ -1,16 +1,28 @@
-# personal_blog
+# Personal Blog Template
 
-Wikipedia 排版风格的个人站（前后端分离）：内容以 Markdown 维护，前端负责展示与 SEO/预渲染，后端按请求读取 `backend/content/` 提供 API，并记录基础访问/阅读统计（可选、可持久化）。
+一个采用 Wikipedia 排版风格的个人网站与博客模板，基于 Vue 3、Vite 和
+Express 构建。内容以 Markdown 维护，支持 SEO、预渲染和双语内容。
 
-## 快速开始（本地开发）
+本仓库既是我正在实际使用的个人站源码，也可以作为模板供你搭建自己的博客。
+
+## 在线示例
+
+https://ningaloha.com
+
+## 使用此模板
+
+点击 GitHub 的 `Use this template` 创建自己的仓库（或复制本仓库），按照下面的快速
+开始步骤在本地运行，然后再将其替换为你自己的站点。
+
+## 快速开始
 
 ```bash
-# 1) 启动后端（默认端口 3000）
+# 1) 启动后端（默认端口：3000）
 cd backend
 npm install
 npm run dev
 
-# 2) 新开终端，启动前端（默认端口 5173；/api 代理到后端）
+# 2) 新开终端，启动前端（默认端口：5173；/api 代理到后端）
 cd frontend
 npm install
 npm run dev
@@ -21,6 +33,17 @@ npm run dev
 常见报错：
 - Vite `proxy ECONNREFUSED /api/...`：后端没启动或端口不对（默认 `3000`）。
 - `npm install ENOTEMPTY ... node_modules/...`：通常是依赖目录残留/占用导致，停掉相关进程后重试；必要时在对应目录执行 `rm -rf node_modules package-lock.json && npm install`。
+
+## 自定义内容
+
+发布自己的站点前，请替换或更新：
+
+- `backend/content/**` 下的原作者文章与项目内容。
+- `frontend/public/avatar.jpg` 中的个人头像。
+- 站点名称、个人信息、GitHub 链接、域名及相关站点配置。
+
+原作者的文字与媒体内容不包含在 MIT License 的授权范围内；详见
+[CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md)。
 
 ## 统计数据（访问量 / 阅读量）
 
@@ -76,7 +99,9 @@ personal_blog/
 
 ---
 
-## 生产部署（GitHub Actions）
+## 生产部署示例（GitHub Actions）
+
+以下是作者当前实际使用的参考部署方案，并非使用本模板的必需步骤。
 
 生产环境使用 Cloudflare、Caddy、systemd 与 GitHub Actions：GitHub runner 在 Ubuntu 22.04 / Node 22 中构建完整 release，服务器只接收、校验和切换 release，不执行 Git 或 npm 操作。
 
@@ -146,7 +171,7 @@ summary: 一句话描述
 tech: [Vue, Node.js]
 startDate: "2025-01"
 status: 进行中
-link: https://github.com/NingAloha/...
+link: https://github.com/yourname/your-project
 featured: false
 ---
 
@@ -226,7 +251,7 @@ git push origin main
 
 建议头像使用正方形并压缩到较小体积（建议 `100~200KB`）。  
 头像更新后，如果站点接入了 Cloudflare，请执行 `Custom Purge` 清理：
-- `https://ningaloha.com/avatar.jpg`
+- `https://your-domain.example/avatar.jpg`
 
 ---
 
@@ -248,19 +273,20 @@ git push origin main
 
 ### 最新验证快照
 
-- Lighthouse 移动端（Mobile）：`99`
-- Lighthouse 桌面端（Desktop）：`77`（文章详情页场景，仍在持续优化）
-- 说明：首页与文章详情页的性能分可能差异较大，建议按关键页面分别评估
+- 2026-09-22 对首页 `https://ningaloha.com/` 的 PageSpeed Insights 实验室测试：
+  - 移动端（Mobile）性能分：`97`（FCP `1.5s`、LCP `2.3s`、TBT `0ms`、CLS `0`）
+  - 桌面端（Desktop）性能分：`99`（FCP `0.4s`、LCP `0.5s`、TBT `0ms`、CLS `0.012`）
+- 该报告暂无真实用户数据；首页与文章详情页的性能分可能不同，建议按关键页面分别评估。
 
 ### 发布后检查清单（推荐）
 
 ```bash
 # 1) 头像是否为新资源（示例目标值会随文件更新而变化）
-curl -I https://ningaloha.com/avatar.jpg
+curl -I https://your-domain.example/avatar.jpg
 
 # 2) robots 与 sitemap 是否可访问
-curl https://ningaloha.com/robots.txt
-curl -I https://ningaloha.com/sitemap.xml
+curl https://your-domain.example/robots.txt
+curl -I https://your-domain.example/sitemap.xml
 ```
 
 若上线后分数异常回退，优先检查：
@@ -270,15 +296,13 @@ curl -I https://ningaloha.com/sitemap.xml
 
 ---
 
-## License
+## 许可证
 
-The repository's MIT License applies to its source code and project
-documentation, except for the personal writings and media listed in
-[CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md).
+本仓库的 MIT License 适用于源代码和项目文档，但
+[CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md) 中列出的原创个人文字和媒体除外。
 
-Personal writings and other original content under `backend/content/**` are
-excluded from the MIT License and remain All Rights Reserved. The author's
-personal avatar at `frontend/public/avatar.jpg` is also All Rights Reserved.
+`backend/content/**` 下的原创个人文字和其他内容不受 MIT License 授权，保留全部
+权利（All Rights Reserved）。作者的个人头像
+`frontend/public/avatar.jpg` 同样保留全部权利。
 
-If you use this repository as a personal blog template, please remove or
-replace the original content under `backend/content/**`.
+若将本仓库作为个人博客模板使用，请删除或替换 `backend/content/**` 下的原作者内容。
