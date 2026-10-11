@@ -3,7 +3,6 @@
 
 # os files
 .DS_Store
-.idea
 
 # runtime / secrets
 backend/.env
