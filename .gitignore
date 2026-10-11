@@ -1,3 +1,7 @@
+# ide files
+.idea
+
+# os files
 .DS_Store
 .idea
 
