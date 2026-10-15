@@ -2,42 +2,43 @@
 
 **Language: [简体中文](./README.md) | English**
 
-Source code for NingAloha's personal website, built with Vue 3, Vite, Cloudflare Workers, and Workers Static Assets. Article content, metadata, and visit counters are stored in Cloudflare D1; article media is stored in R2.
+NingAloha's personal website, built with Vue 3, Vite, Cloudflare Workers, and Workers Static Assets. Article Markdown, metadata, and visit statistics live in Cloudflare D1; article media lives in Cloudflare R2.
 
 **Website:** https://ningaloha.com
 
 ## Architecture
 
 ```text
-Visitor or search crawler
-  → Cloudflare Worker
-      ├─ Workers Static Assets: Vue frontend
-      ├─ Content and statistics APIs
-      ├─ D1: articles, translations, metadata, and visit counters
-      ├─ R2: article images and media
-      └─ Dynamic article HTML metadata, robots.txt, and sitemap.xml
+Visitors / search crawlers
+    ↓
+Cloudflare Worker
+    ├── Workers Static Assets: Vue frontend
+    ├── APIs: content retrieval, statistics, media
+    ├── D1: articles, translations, metadata, visit counters
+    ├── R2: article images and media
+    └── Dynamic page metadata, robots.txt, sitemap.xml
 ```
 
-Articles have Chinese (`zh`) and English (`en`) variants sharing the same base slug and visit counter. English requests fall back to Chinese when the English variant is missing; Chinese requests use the Chinese variant.
+Content supports Chinese (`zh`) and English (`en`) variants. The two variants share the same base slug and article visit counter. English requests fall back to Chinese when no English variant is available.
 
-The previous Express/Caddy/VPS application remains available as a potential rollback origin. It is not deployed by the current GitHub Actions workflow.
+## Code and content separation
 
-## Separation of application and content
+**GitHub manages application code; D1/R2 hold published content.**
 
-**This repository owns application code, not day-to-day article publishing.**
+Application deployment does not import, overwrite, or delete articles. Publishing or editing an article does not require committing Markdown files or deploying the Worker.
 
-Only source code, tests, D1 schema migrations, and deployment configuration belong in Git. Production Markdown, metadata, and images live in D1/R2 independently of Git commits and application deployments.
+A web-based `/admin` editor has not been developed yet. Content can currently be managed in the Cloudflare dashboard. Media references in Markdown (`/api/media/content/...`) must match the corresponding R2 object keys.
 
-The ignored `content/` directory is an optional local input for migrating older articles. The import script is a one-time/repeatable migration utility, **not a CMS**. A web-based `/admin` editor has **not** been built. Content can currently be managed manually through Cloudflare; Markdown media paths and R2 keys must remain consistent.
+The root `content/` directory is ignored by Git and may be used as an optional local import source. The import utility is not an online CMS.
+
+Key directories:
 
 ```text
 personal-blog/
-├── frontend/            # Vue frontend
-├── backend/             # Retained Express implementation and tests (VPS fallback)
-├── cloudflare/          # Worker, D1 migrations, R2 import tools, tests
-├── scripts/             # Legacy build and VPS fallback utilities
-├── .github/workflows/   # Verification and application deployment
-└── content/             # Optional ignored local migration source
+├── frontend/             # Vue frontend
+├── cloudflare/           # Worker, D1 schema, R2 import utilities and tests
+├── .github/workflows/    # CI/CD
+└── content/              # Optional ignored local content source
 ```
 
 ## Local development
@@ -46,7 +47,6 @@ Requires Node.js 22 or later.
 
 ```bash
 cd frontend && npm ci
-cd ../backend && npm ci
 cd ../cloudflare && npm ci
 
 npm run db:migrate:local
@@ -54,30 +54,40 @@ npm run db:migrate:local
 npm run dev
 ```
 
-The local Cloudflare application runs at http://127.0.0.1:8787.
+Open http://127.0.0.1:8787 to view the local application. Import sample content first if needed (see below).
 
-To import content from an external directory, prepare the source and run:
+Keep local Wrangler state, environment files, credentials, build outputs, and content sources out of Git.
+
+## Content import (optional)
+
+The importer accepts Markdown and media from a directory outside the repository. Production content remains authoritative in D1/R2. Validate the source before importing:
 
 ```bash
 cd cloudflare
 node scripts/import-content.mjs --dry-run --content-root /absolute/path/to/content
+```
+
+Import into the local simulated D1/R2 environment:
+
+```bash
 node scripts/import-content.mjs --local --persist-to .wrangler/state \
   --content-root /absolute/path/to/content
 ```
 
-Local import does not modify production D1/R2. Keep credentials, environment files, local Wrangler state, build artifacts, and content sources out of Git. The retained Express server is for fallback testing, not production deployment.
+Production imports require an explicit environment and bucket selection and are not part of automatic deployment. See [Cloudflare technical documentation](./cloudflare/README.md).
 
-See [Cloudflare technical documentation](./cloudflare/README.md) for schema, media paths, and operations.
+## Tests and deployment
 
-## Continuous integration and deployment
+[GitHub Actions](./.github/workflows/ci.yml) installs dependencies, runs tests, builds the production frontend, and validates a Wrangler deployment. After verification, pushes or manual dispatches on `main` deploy the production Worker and Static Assets.
 
-[GitHub Actions](./.github/workflows/ci.yml) separates application releases from content changes:
+**CI does not run production D1 schema migrations, write article data, or upload R2 media.** Run schema migrations separately only when a real change is needed.
 
-- Branch pushes and pull requests: install dependencies, run Express/Worker tests, build the production frontend, and perform a Wrangler deployment dry run.
-- Pushes to `main` and manual workflow dispatches on `main`: deploy the production Worker and Static Assets after verification.
-- **CI does not automatically run production D1 schema migrations, import articles, upload R2 media, or change the VPS.** Apply schema changes separately when actually needed; publishing content does not require an application deployment.
+Production deployment uses GitHub Actions secrets:
 
-Production deployment uses `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub Actions secrets. Never commit secrets or log their values.
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Never commit or log credentials.
 
 ### Manual verification
 
@@ -89,12 +99,10 @@ npx wrangler deploy --dry-run --env production \
   --outdir .wrangler/dry-run-production
 ```
 
-## Domains and fallback
+## Domains
 
-Production configures `ningaloha.com` and `www.ningaloha.com` as **Worker Custom Domains** (`custom_domain: true` in `cloudflare/wrangler.jsonc`), not ordinary Worker Routes.
-
-Restoring the VPS requires checking the current Cloudflare Custom Domain associations and DNS records, removing the relevant association, restoring the correct VPS-origin DNS records, and validating HTTPS for both hostnames. **Deleting domain declarations from Wrangler is not a verified automatic rollback.**
+`ningaloha.com` and `www.ningaloha.com` are configured as **Worker Custom Domains** (`custom_domain: true`) in [Wrangler configuration](./cloudflare/wrangler.jsonc). Manage and verify production domain associations and resource bindings in Cloudflare.
 
 ## License
 
-Application source code and project documentation are under the [MIT License](./LICENSE). Original writing, article media, and the personal avatar are **not** included in that license; see [CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md).
+Application source code and project documentation are under the [MIT License](./LICENSE). Original writing, article media, and the personal avatar are not included; see [CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md).
