@@ -171,11 +171,13 @@ counter values directly in Production D1. Do not copy Preview counters. Keep the
 VPS and its DNS values available until the Cloudflare deployment has been
 validated and the root-domain cutover is explicitly approved.
 
-Production uses Worker Routes for both `ningaloha.com/*` and
-`www.ningaloha.com/*`. The existing proxied DNS records remain in place, while
-the Production `workers.dev` and Preview URL endpoints are disabled. This keeps
-the cutover reversible: for an emergency rollback, remove the two Production
-routes from `wrangler.jsonc` and redeploy the Production environment. Requests
-then return to the unchanged VPS origin without a DNS migration or propagation
-delay. Do not delete the VPS or its DNS records until the Cloudflare deployment
-has completed an appropriate observation period.
+Production currently uses **Worker Custom Domains** (`custom_domain: true`),
+not Worker Routes. A Custom Domain may manage DNS records, so removing the
+Wrangler route declarations alone is **not** a verified rollback to the VPS.
+Before changing domain attachment, record the current zone's DNS settings and
+prepare a manual rollback: remove the Worker Custom Domain association when
+appropriate, restore the intended proxied VPS origin DNS records, then verify
+both apex and `www` over HTTPS. Actual DNS / custom-domain state must be checked
+in the Cloudflare dashboard; deployment configuration alone does not establish
+what is currently live. Do not delete the VPS until cutover and rollback have
+been independently tested.
