@@ -3,7 +3,7 @@ export function normalizeSiteUrl(value) {
 }
 
 export const siteConfig = {
-  siteUrl: 'https://ningaloha.com',
+  siteUrl: import.meta.env?.VITE_SITE_URL || 'https://ningaloha.com',
   siteName: '寧中亙的个人主页',
   siteNameEn: "NingAloha's Personal Site",
   authorName: 'NingAloha',

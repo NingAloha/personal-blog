@@ -13,7 +13,9 @@ material covered by this notice.
 ## Scope
 
 This notice applies to original article, essay, and project-writing content,
-including but not limited to:
+including but not limited to the following local/export paths. These paths are
+ignored by Git and the authoritative published copies live outside the
+repository:
 - `content/essays/**`
 - `content/tech-blogs/**`
 - `content/projects/**`

@@ -4,9 +4,28 @@
 # os files
 .DS_Store
 
+# content lives in Cloudflare D1/R2 and is managed outside this repository
+/content/
+
 # runtime / secrets
-backend/.env
 backend/data/stats.json
+
+backend/.env*
+!backend/.env.example
+!backend/.env.*.example
+
+frontend/.env*
+!frontend/.env.example
+!frontend/.env.*.example
+
+cloudflare/.env*
+!cloudflare/.env.example
+!cloudflare/.env.*.example
+cloudflare/.dev.vars*
+!cloudflare/.dev.vars.example
+!cloudflare/.dev.vars.*.example
+cloudflare/.wrangler/
+cloudflare/wrangler-output-*.json
 
 # dependencies
 **/node_modules/

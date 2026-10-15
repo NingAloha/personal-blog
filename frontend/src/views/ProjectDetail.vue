@@ -55,6 +55,7 @@ async function load(slug) {
         description: project.value.summary,
         path,
         type: 'article',
+        language: project.value.contentLanguage,
         jsonLd: buildArticleJsonLd({
           title: project.value.title,
           summary: project.value.summary,
@@ -62,6 +63,7 @@ async function load(slug) {
           datePublished: project.value.startDate,
           tags: project.value.tech,
           articleType: 'Article',
+          language: project.value.contentLanguage,
         }),
       })
     applyArticleSeo()

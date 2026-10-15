@@ -15,14 +15,14 @@
       </thead>
       <tbody>
         <tr v-for="post in posts" :key="post.slug">
-          <td class="list-title-cell">
+          <td class="list-title-cell" :data-label="t('list.thTitle')">
             <router-link :to="`/tech-blogs/${post.slug}/`">{{ post.title }}</router-link>
           </td>
-          <td class="list-summary-cell">{{ post.summary }}</td>
-          <td>
+          <td class="list-summary-cell" :data-label="t('list.thSummary')">{{ post.summary }}</td>
+          <td :data-label="t('list.thTags')">
             <span v-for="tag in post.tags" :key="tag" class="tag">{{ tag }}</span>
           </td>
-          <td class="list-date-cell">{{ post.date }}</td>
+          <td class="list-date-cell" :data-label="t('list.thDate')">{{ post.date }}</td>
         </tr>
       </tbody>
     </table>

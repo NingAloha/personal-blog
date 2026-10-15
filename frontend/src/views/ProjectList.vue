@@ -16,15 +16,15 @@
       </thead>
       <tbody>
         <tr v-for="p in projects" :key="p.slug">
-          <td class="list-title-cell">
+          <td class="list-title-cell" :data-label="t('list.projectName')">
             <router-link :to="`/projects/${p.slug}/`">{{ p.title }}</router-link>
           </td>
-          <td class="list-summary-cell">{{ p.summary }}</td>
-          <td>
+          <td class="list-summary-cell" :data-label="t('list.thSummary')">{{ p.summary }}</td>
+          <td :data-label="t('list.projectTech')">
             <span v-for="t in p.tech" :key="t" class="tech-tag">{{ t }}</span>
           </td>
-          <td>{{ p.status }}</td>
-          <td class="list-date-cell">{{ p.startDate }}</td>
+          <td :data-label="t('list.projectStatus')">{{ p.status }}</td>
+          <td class="list-date-cell" :data-label="t('list.projectTime')">{{ p.startDate }}</td>
         </tr>
       </tbody>
     </table>

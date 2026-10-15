@@ -11,6 +11,9 @@
     "generate:ai-discovery": "node ../scripts/generate-ai-discovery.mjs",
     "generate:sitemap": "node ../scripts/generate-sitemap.mjs",
     "build:client": "vite build",
+    "build:cloudflare": "npm run build:cloudflare:preview",
+    "build:cloudflare:preview": "vite build --mode cloudflare-preview",
+    "build:cloudflare:production": "vite build --mode cloudflare-production",
     "build": "npm run generate:robots && npm run generate:ai-discovery && npm run generate:sitemap && npm run build:client && node ../scripts/prerender-static.mjs",
     "preview": "vite preview"
   },
