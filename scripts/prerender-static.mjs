@@ -7,7 +7,7 @@ import { buildAbsoluteUrl, buildAssetUrl, normalizeSitePath } from '../frontend/
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(SCRIPT_DIR, '..')
-const CONTENT_ROOT = join(ROOT, 'backend', 'content')
+const CONTENT_ROOT = join(ROOT, 'content')
 const DIST_ROOT = join(ROOT, 'frontend', 'dist')
 const TEMPLATE_PATH = join(DIST_ROOT, 'index.html')
 

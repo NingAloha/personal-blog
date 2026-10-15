@@ -17,7 +17,7 @@ npm run preview
   - `public/llms.txt`
   - `public/.well-known/ai-catalog.json`
   - `public/.well-known/ard.json`
-- `generate:sitemap` 会读取仓库根目录下 `backend/content/**/*.md` 并生成：
+- `generate:sitemap` 会读取仓库根目录下 `content/**/*.md` 并生成：
   - `public/sitemap.xml`
 
 ## SEO files

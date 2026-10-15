@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(SCRIPT_DIR, '..')
-const CONTENT_ROOT = join(ROOT, 'backend', 'content')
+const CONTENT_ROOT = join(ROOT, 'content')
 
 const CONTENT_CONFIGS = [
   { dir: 'projects', basePath: '/projects' },

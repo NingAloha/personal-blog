@@ -3,7 +3,7 @@ import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const SOURCE_ROOT = join(ROOT, 'backend', 'content')
+const SOURCE_ROOT = join(ROOT, 'content')
 const TARGET_ROOT = join(ROOT, 'frontend', 'public', 'content')
 
 function syncAssets(dir, relative = '') {

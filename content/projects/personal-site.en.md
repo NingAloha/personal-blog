@@ -17,10 +17,10 @@ This is a content-first personal site: the frontend handles presentation and rou
 The repository keeps frontend and backend responsibilities separate:
 
 - `frontend/`: a Vue 3 and Vite application for rendering pages and interaction
-- `backend/`: an Express API that reads Markdown from `backend/content/`
-- `backend/content/projects/`: project entries
-- `backend/content/essays/`: essays
-- `backend/content/tech-blogs/`: technical posts
+- `backend/`: an Express API that reads Markdown from `content/`
+- `content/projects/`: project entries
+- `content/essays/`: essays
+- `content/tech-blogs/`: technical posts
 
 The central benefit is a separation between content and rendering: Markdown changes primarily affect content, while frontend work primarily affects the reading experience.
 
@@ -53,7 +53,7 @@ These choices echo two essays on the site:
 - Content remains organized as Markdown and is read by the backend on demand.
 - Technical posts support content-level Chinese/English switching: English uses a sibling `.en.md` file when present and falls back to Chinese otherwise.
 - Chinese and English versions of the same technical post share a base slug, so listings, routes, and read statistics do not count them twice.
-- The repository is open source, while writing in `backend/content/` remains under a separate copyright notice in `CONTENT_COPYRIGHT.md`.
+- The repository is open source, while writing in `content/` remains under a separate copyright notice in `CONTENT_COPYRIGHT.md`.
 - Dynamic SEO metadata is available for titles, descriptions, canonical URLs, Open Graph, and Twitter Cards.
 - Detail pages include Article or BlogPosting JSON-LD.
 - The site provides `robots.txt`, generated `sitemap.xml`, and static prerendered output.
@@ -66,7 +66,7 @@ These choices echo two essays on the site:
 
 The latest round of work focused on discoverability, first-render performance, and reliable releases:
 
-- Added `scripts/generate-sitemap.mjs` to generate the sitemap from `backend/content/**/*.md` during builds.
+- Added `scripts/generate-sitemap.mjs` to generate the sitemap from `content/**/*.md` during builds.
 - Unified frontend SEO injection through route-level defaults and content-level detail-page metadata.
 - Fixed a CDN-hosting-rule interaction that caused `robots.txt` to be misdiagnosed by external tools.
 - Added explicit avatar dimensions, a fixed `1:1` container, a smaller image, and a steadier first-render placeholder.

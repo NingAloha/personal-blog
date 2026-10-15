@@ -4,11 +4,12 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node --test"
   },
   "dependencies": {
+    "@11ty/gray-matter": "^3.0.0",
     "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "gray-matter": "^4.0.3"
+    "express": "^4.22.3"
   }
 }

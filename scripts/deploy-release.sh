@@ -52,7 +52,7 @@ verify_release() {
 
   test -f "${candidate_dir}/frontend/dist/index.html"
   test -f "${candidate_dir}/backend/server.js"
-  test -d "${candidate_dir}/backend/content"
+  test -d "${candidate_dir}/content"
   test -d "${candidate_dir}/backend/node_modules"
   /usr/bin/node --check "${candidate_dir}/backend/server.js"
 }
