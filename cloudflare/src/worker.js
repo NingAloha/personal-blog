@@ -22,7 +22,7 @@ function decorate(response, env, { cors = false } = {}) {
 function json(body, status = 200, headers = {}) {
   return Response.json(body, {
     status,
-    headers: { 'Cache-Control': 'public, max-age=60', ...headers },
+    headers: { 'Cache-Control': status >= 400 ? 'no-store' : 'public, max-age=60', ...headers },
   })
 }
 
@@ -48,7 +48,8 @@ async function handleContentApi(request, env, url) {
     try {
       return json(await repository.list(type, url.searchParams.get('lang')))
     } catch (error) {
-      return json({ error: error.message }, 500)
+      console.error('Content listing failed', error)
+      return json({ error: 'Internal server error' }, 500)
     }
   }
 
@@ -56,8 +57,10 @@ async function handleContentApi(request, env, url) {
     const item = await repository.get(type, decodeSlug(encodedSlug), url.searchParams.get('lang'))
     item.content = materializeMediaUrls(item.content, url.origin)
     return json(item, 200, { 'Content-Language': item[CONTENT_LOCALE] })
-  } catch {
-    return json({ error: 'Not found' }, 404)
+  } catch (error) {
+    if (error.message === 'Not found') return json({ error: 'Not found' }, 404)
+    console.error('Content lookup failed', error)
+    return json({ error: 'Internal server error' }, 500)
   }
 }
 

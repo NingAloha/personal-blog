@@ -51,6 +51,16 @@ watch(locale, load)
 </script>
 
 <style scoped>
+/* Desktop column widths: title, summary, tags, date.
+   Mobile uses the existing stacked-card layout. */
+@media (min-width: 769px) {
+  .wiki-list-table { table-layout: fixed; }
+  .wiki-list-table th:nth-child(1) { width: 30%; }
+  .wiki-list-table th:nth-child(2) { width: 38%; }
+  .wiki-list-table th:nth-child(3) { width: 22%; }
+  .wiki-list-table th:nth-child(4) { width: 10%; }
+  .wiki-list-table td { overflow-wrap: anywhere; }
+}
 .page-lead {
   color: var(--text-muted);
   margin-bottom: 1.5rem;
@@ -85,7 +95,6 @@ watch(locale, load)
   text-decoration: underline;
 }
 .list-summary-cell {
-  max-width: 380px;
   color: var(--text-soft);
 }
 .list-date-cell {

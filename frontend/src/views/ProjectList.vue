@@ -53,6 +53,20 @@ watch(locale, load)
 </script>
 
 <style scoped>
+/* Desktop columns: name, summary, tech stack, status, date.
+   Fix their proportions rather than letting long tech lists absorb width.
+   Mobile keeps the shared stacked-card layout. */
+@media (min-width: 769px) {
+  .wiki-list-table {
+    table-layout: fixed;
+  }
+  .wiki-list-table th:nth-child(1) { width: 18%; }
+  .wiki-list-table th:nth-child(2) { width: 37%; }
+  .wiki-list-table th:nth-child(3) { width: 25%; }
+  .wiki-list-table th:nth-child(4) { width: 9%; }
+  .wiki-list-table th:nth-child(5) { width: 11%; }
+  .wiki-list-table td { overflow-wrap: anywhere; }
+}
 .page-lead {
   color: var(--text-muted);
   margin-bottom: 1.5rem;
@@ -87,7 +101,6 @@ watch(locale, load)
   text-decoration: underline;
 }
 .list-summary-cell {
-  max-width: 320px;
   color: var(--text-soft);
 }
 .list-date-cell {

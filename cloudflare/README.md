@@ -1,26 +1,24 @@
 # Cloudflare-native application
 
-This directory contains the Cloudflare Preview and Production application. The
-Express/Caddy/VPS deployment remains online as a rollback origin but is not a
-target of the current CI/CD workflow.
+This directory documents the Cloudflare Worker, D1, and R2 implementation used by the production website.
 
 ## Architecture
 
 ```text
-Markdown migration source
+Optional local content source
   -> repeatable importer
   -> D1: article identity, localized metadata, Markdown body
   -> R2: media under deterministic content/... keys
 
 Browser or crawler
-  -> Preview or Production Worker
+  -> Cloudflare Worker
        -> Workers Static Assets for the Vue client
        -> D1 for content, localization, and visitor counters
        -> R2 for /api/media/content/...
        -> D1-backed HTML metadata and sitemap
 ```
 
-The importer is a migration tool, not a CMS. It accepts `--content-root`, so a
+The importer is an optional data import tool, not a CMS. It accepts `--content-root`, so a
 future export directory may live outside this Git repository. It never modifies
 or deletes source Markdown or media.
 
@@ -50,26 +48,19 @@ outside `content/`.
 Migration `migrations/0002_statistics.sql` adds site/article counters and
 ten-minute visit deduplication. Only a keyed HMAC of request scope, IP, and user
 agent is stored; raw IP addresses are never persisted. Language siblings share
-the base-slug counter. Preview counters are isolated and VPS production
-statistics are not imported automatically.
+the base-slug counter.
 
-`STATS_HASH_SECRET` must be a Wrangler secret in each deployed environment. Do
+`STATS_HASH_SECRET` must be configured as a Wrangler secret in production. Do
 not put it in committed configuration or an environment file.
 
 ## Static frontend and dynamic SEO
 
-`npm run build:frontend:preview` and `npm run build:frontend:production` select
-environment-specific metadata and indexing policy. Both outputs use same-origin
-`/api` requests and exclude local Markdown, legacy generated sitemaps, and
-production-only public files. The Worker injects D1-backed titles,
+`npm run build:frontend:production` builds the production frontend with
+production metadata and indexing policy. Builds use same-origin `/api` requests and exclude local Markdown and generated sitemaps. The Worker injects D1-backed titles,
 descriptions, canonical and alternate links, language metadata, JSON-LD, and
 rendered Markdown into navigation responses. `/sitemap.xml` is generated from
 the active D1 variants, so content changes do not require a Git commit or
 frontend rebuild.
-
-Preview responses include `X-Robots-Tag: noindex, nofollow`; Preview
-`robots.txt` disallows all crawling. This is controlled by `PREVIEW_MODE` and
-must remain enabled on `test.ningaloha.com`.
 
 ## Local development
 
@@ -89,9 +80,7 @@ npm run dev
 The complete site is then served at `http://127.0.0.1:8787`. Supply an external
 content directory with `--content-root` when the ignored root `content/`
 directory is not present. Local Wrangler state, `.dev.vars*`, `.env*`,
-credentials, account selection, and content sources are ignored by Git. The
-ordinary frontend `npm run build` and Express server are retained only for the
-VPS rollback path.
+credentials, account selection, and content sources are ignored by Git. 
 
 ## Repeatable content import
 
@@ -99,7 +88,7 @@ VPS rollback path.
 node scripts/import-content.mjs --dry-run [--content-root PATH]
 node scripts/import-content.mjs --local [--persist-to PATH] [--content-root PATH]
 node scripts/import-content.mjs --remote --confirm-remote \
-  --env preview --bucket personal-blog-content-preview [--content-root PATH]
+  --env production --bucket personal-blog-content-production [--content-root PATH]
 ```
 
 The importer scans all content before writing. Missing files, unsafe paths,
@@ -109,50 +98,14 @@ upserts. Repeated runs overwrite the same R2 keys and do not create duplicate
 D1 rows. Inline Markdown images are rewritten; external/data URLs are left
 unchanged.
 
-## Preview deployment
-
-Account selection is local-only:
-
-```dotenv
-# cloudflare/.env.preview.local (ignored)
-CLOUDFLARE_ACCOUNT_ID=<selected-account-id>
-```
-
-Before deploying, verify that this account owns the `ningaloha.com` zone and
-that `test.ningaloha.com` has no conflicting DNS record. Never attach the root
-domain from Preview.
-
-```bash
-cd cloudflare
-npx wrangler whoami
-npx wrangler d1 migrations apply CONTENT_DB --remote --env preview
-node scripts/import-content.mjs --remote --confirm-remote \
-  --env preview --bucket personal-blog-content-preview
-openssl rand -hex 32 | npx wrangler secret put STATS_HASH_SECRET --env preview
-npm run deploy:preview
-```
-
-Existing Preview resources:
-
-- Worker: `personal-blog-content-api-preview`
-- D1: `personal-blog-content-api-preview-content-db`
-- R2: `personal-blog-content-preview`
-- Website: `https://test.ningaloha.com`
-
-The production Worker, database, and bucket are not created or modified by
-these Preview commands. Never target the unrelated `matrix-media` bucket.
-
 ## Production deployment
 
 Cloudflare dynamic SEO, D1 content, and R2 media are authoritative for the
-public Production site. Repository sitemap/prerender scripts remain available
-only for the unchanged VPS rollback origin.
+public Production site. 
 
-The Cloudflare frontend has separate build modes so Preview metadata cannot be
-published to Production accidentally:
+The production frontend is built using:
 
 ```text
-npm run build:frontend:preview
 npm run build:frontend:production
 ```
 
@@ -166,16 +119,8 @@ node scripts/import-content.mjs --remote --confirm-remote \
 npm run deploy:production
 ```
 
-Set `STATS_HASH_SECRET` with `wrangler secret put` and seed any approved legacy
-counter values directly in Production D1. Do not copy Preview counters. Keep the
-VPS and its DNS values available until the Cloudflare deployment has been
-validated and the root-domain cutover is explicitly approved.
+Set `STATS_HASH_SECRET` with `wrangler secret put` (never commit the secret).
 
-Production uses Worker Routes for both `ningaloha.com/*` and
-`www.ningaloha.com/*`. The existing proxied DNS records remain in place, while
-the Production `workers.dev` and Preview URL endpoints are disabled. This keeps
-the cutover reversible: for an emergency rollback, remove the two Production
-routes from `wrangler.jsonc` and redeploy the Production environment. Requests
-then return to the unchanged VPS origin without a DNS migration or propagation
-delay. Do not delete the VPS or its DNS records until the Cloudflare deployment
-has completed an appropriate observation period.
+Production uses **Worker Custom Domains** (`custom_domain: true`) for `ningaloha.com` and `www.ningaloha.com`. Verify domain associations and resource bindings in Cloudflare when changing the deployment.
+
+The CI workflow deploys application code and static assets only. Apply D1 schema migrations manually when the schema changes, and manage published content independently in D1/R2. The web-based `/admin` editor has not yet been implemented.
