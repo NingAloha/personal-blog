@@ -127,11 +127,12 @@ npx wrangler deploy --dry-run --env production \
   --outdir .wrangler/dry-run-production
 ```
 
-Production uses Worker Routes for `ningaloha.com/*` and
-`www.ningaloha.com/*`. The existing proxied DNS records continue pointing to the
-VPS origin, which keeps rollback independent of DNS propagation. To roll back,
-remove the two Production routes from `cloudflare/wrangler.jsonc` and redeploy;
-requests then return to the unchanged VPS.
+Production currently uses **Worker Custom Domains** for `ningaloha.com` and
+`www.ningaloha.com` (`custom_domain: true` in Wrangler), **not** Worker Routes.
+The previous DNS-only rollback instructions are therefore not valid. Keep the
+VPS ready until Cloudflare cutover is verified, and prepare an explicit DNS / Custom
+Domain rollback with the current Cloudflare zone records before production changes.
+Do not assume that removing the Wrangler routes automatically restores the VPS.
 
 ## License
 
