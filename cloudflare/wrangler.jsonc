@@ -1,0 +1,51 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "personal-blog-content-api-local",
+	"main": "src/worker.js",
+	"compatibility_date": "2026-10-15",
+	"d1_databases": [
+		{
+			"binding": "CONTENT_DB",
+			"migrations_dir": "migrations"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "CONTENT_MEDIA",
+			"bucket_name": "personal-blog-content-local"
+		}
+	],
+	"env": {
+		"preview": {
+			"name": "personal-blog-content-api-preview",
+			"d1_databases": [
+				{
+					"binding": "CONTENT_DB",
+					"migrations_dir": "migrations",
+					"database_id": "30109a6c-a1c7-45cb-8370-13c4fa18934e"
+				}
+			],
+			"r2_buckets": [
+				{
+					"binding": "CONTENT_MEDIA",
+					"bucket_name": "personal-blog-content-preview"
+				}
+			]
+		},
+		"production": {
+			"name": "personal-blog-content-api-production",
+			"d1_databases": [
+				{
+					"binding": "CONTENT_DB",
+					"migrations_dir": "migrations"
+				}
+			],
+			"r2_buckets": [
+				{
+					"binding": "CONTENT_MEDIA",
+					"bucket_name": "personal-blog-content-production"
+				}
+			]
+		}
+	}
+}
