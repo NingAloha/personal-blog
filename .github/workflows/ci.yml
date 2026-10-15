@@ -43,10 +43,6 @@ jobs:
         working-directory: cloudflare
         run: npm ci
 
-      - name: Validate D1 migrations locally
-        working-directory: cloudflare
-        run: npx wrangler d1 migrations apply CONTENT_DB --local --persist-to .wrangler/ci-migration-state
-
       - name: Test Express backend
         working-directory: backend
         run: npm test
@@ -144,10 +140,6 @@ jobs:
             echo 'Missing CLOUDFLARE_ACCOUNT_ID' >&2
             exit 1
           fi
-
-      - name: Apply pending production D1 migrations
-        working-directory: cloudflare
-        run: npx wrangler d1 migrations apply CONTENT_DB --remote --env production
 
       - name: Deploy Worker and Static Assets
         working-directory: cloudflare
