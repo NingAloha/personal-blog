@@ -12,13 +12,15 @@ material covered by this notice.
 
 ## Scope
 
-This notice applies to original article, essay, and project-writing content,
-including but not limited to the following local/export paths. These paths are
-ignored by Git and the authoritative published copies live outside the
-repository:
-- `content/essays/**`
-- `content/tech-blogs/**`
-- `content/projects/**`
+This notice applies to original article, essay, and project-writing content.
+The current branch does not track article source files; authoritative published
+copies live outside the repository. Earlier repository history may contain
+prior copies under `backend/content/`. Current local imports may instead use an
+external directory or an ignored root-level `content/` directory:
+
+- `backend/content/essays/**`
+- `backend/content/tech-blogs/**`
+- `backend/content/projects/**`
 
 It also applies to the author's personal avatar and other original personal
 media represented by:

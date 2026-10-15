@@ -11,7 +11,7 @@ import matter from '@11ty/gray-matter'
 import {
   CONTENT_TYPES,
   splitLocalizedMarkdownName,
-} from '../../backend/lib/content-model.mjs'
+} from '../../shared/content-model.mjs'
 
 const MARKDOWN_IMAGE = /(!\[[^\]]*\]\()([^)\s]+)([^)]*\))/g
 

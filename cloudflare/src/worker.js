@@ -1,4 +1,4 @@
-import { CONTENT_TYPES } from '../../backend/lib/content-model.mjs'
+import { CONTENT_TYPES } from '../../shared/content-model.mjs'
 import { CONTENT_LOCALE, createD1ContentRepository } from './content-repository.js'
 import { materializeMediaUrls, serveMedia } from './media.js'
 import { renderRobots, renderSitePage, renderSitemap } from './site.js'

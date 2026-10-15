@@ -8,12 +8,6 @@
 /content/
 
 # runtime / secrets
-backend/data/stats.json
-
-backend/.env*
-!backend/.env.example
-!backend/.env.*.example
-
 frontend/.env*
 !frontend/.env.example
 !frontend/.env.*.example
@@ -32,9 +26,3 @@ cloudflare/wrangler-output-*.json
 
 # builds
 frontend/dist/
-frontend/public/content/
-frontend/public/llms.txt
-frontend/public/.well-known/ai-catalog.json
-frontend/public/.well-known/ard.json
-frontend/public/robots.txt
-frontend/public/sitemap.xml

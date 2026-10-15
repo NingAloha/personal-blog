@@ -16,7 +16,7 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;')
 }
 
-function siteMetadataPlugin({ siteUrl = siteConfig.siteUrl, robots = 'index,follow,max-image-preview:large', cloudflare = false } = {}) {
+function siteMetadataPlugin({ siteUrl, robots }) {
   const replacements = {
     '%SITE_URL%': escapeHtml(normalizeSiteUrl(siteUrl)),
     '%SITE_NAME%': escapeHtml(siteConfig.siteName),
@@ -27,13 +27,10 @@ function siteMetadataPlugin({ siteUrl = siteConfig.siteUrl, robots = 'index,foll
   return {
     name: 'site-metadata',
     transformIndexHtml(html) {
-      const result = Object.entries(replacements).reduce(
+      return Object.entries(replacements).reduce(
         (result, [placeholder, value]) => result.replaceAll(placeholder, value),
         html,
       )
-      return cloudflare
-        ? result.replace(/\s*<link rel="(?:ard|describedby)"[^>]*>/g, '')
-        : result
     },
   }
 }
@@ -54,38 +51,22 @@ function cloudflarePublicAssetsPlugin() {
 export default defineConfig(({ mode }) => {
   const cloudflarePreview = mode === 'cloudflare-preview'
   const cloudflareProduction = mode === 'cloudflare-production'
-  const cloudflare = cloudflarePreview || cloudflareProduction
+  if (!cloudflarePreview && !cloudflareProduction) {
+    throw new Error('Use a Cloudflare build mode: cloudflare-preview or cloudflare-production.')
+  }
   const cloudflareSiteUrl = cloudflarePreview ? 'https://test.ningaloha.com' : siteConfig.siteUrl
   return {
-    define: cloudflare ? {
+    define: {
       'import.meta.env.VITE_SITE_URL': JSON.stringify(cloudflareSiteUrl),
-    } : undefined,
-    publicDir: cloudflare ? false : 'public',
+    },
+    publicDir: false,
     plugins: [
       vue(),
-      siteMetadataPlugin(cloudflare ? {
+      siteMetadataPlugin({
         siteUrl: cloudflareSiteUrl,
         robots: cloudflarePreview ? 'noindex,nofollow' : 'index,follow,max-image-preview:large',
-        cloudflare: true,
-      } : undefined),
-      ...(cloudflare ? [cloudflarePublicAssetsPlugin()] : []),
+      }),
+      cloudflarePublicAssetsPlugin(),
     ],
-    server: {
-      proxy: {
-        // 开发时代理 /api 到后端服务
-        '/api': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-      },
-    },
-    preview: {
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-        },
-      },
-    },
   }
 })

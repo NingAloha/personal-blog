@@ -1,4 +1,4 @@
-import { normalizeContentSlug } from '../../backend/lib/content-model.mjs'
+import { normalizeContentSlug } from '../../shared/content-model.mjs'
 
 export const VISIT_DEDUPE_WINDOW_MS = 10 * 60 * 1000
 
