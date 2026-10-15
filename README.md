@@ -1,56 +1,48 @@
 # Personal Blog
 
-NingAloha 的个人网站源码，使用 Vue 3、Vite 与 Cloudflare Workers Static
-Assets。线上文章与元数据存储在 Cloudflare D1，文章图片和媒体存储在 R2。
+**语言 / Language：简体中文 | [English](./README.en.md)**
 
-- Production: <https://ningaloha.com>
-- Preview: <https://test.ningaloha.com>
+NingAloha 的个人网站源码，基于 Vue 3、Vite、Cloudflare Workers 和 Workers Static Assets。文章正文、元数据与访问统计存储在 Cloudflare D1，文章图片及媒体存储在 R2。
 
-## Architecture
+**网站：** https://ningaloha.com
+
+## 架构
 
 ```text
-Browser or crawler
-  -> Cloudflare Worker
-       -> Vue static assets
-       -> read-only content and statistics APIs
-       -> D1 article variants, Markdown, metadata, and counters
-       -> R2 article media
-       -> D1-backed article HTML, metadata, robots.txt, and sitemap.xml
+访客或搜索引擎
+  → Cloudflare Worker
+      ├─ Workers Static Assets：Vue 前端
+      ├─ 内容与访问统计 API
+      ├─ D1：文章、语言版本、元数据、访问统计
+      ├─ R2：文章图片与其他媒体
+      └─ 动态生成文章 HTML 元信息、robots.txt 和 sitemap.xml
 ```
 
-Chinese and English variants share one base slug and one article counter.
-English requests prefer the English variant and fall back to Chinese when it is
-missing.
+文章支持中文（`zh`）和英文（`en`）：两个语言版本共用文章标识与访问统计。请求英文版本时，如果没有英文内容会回退到中文；中文请求只返回中文版本。
 
-The previous Express/Caddy/VPS deployment is retained as a rollback origin. It
-is not deleted, modified, or deployed by the current GitHub Actions workflow.
+原来的 Express/Caddy/VPS 站点暂时保留作为回退来源，但已不属于当前 GitHub Actions 的部署目标。
 
-## Repository boundary
+## 代码与内容分离
 
-This repository contains application source code, tests, migrations, and
-deployment configuration only. Article Markdown and article media are not
-tracked by Git. The root `content/` directory is ignored and may be used only as
-a local migration source.
+**这个仓库负责网站程序，不负责日常文章发布。**
 
-The authoritative production content lives in D1 and R2. Application deployment
-does not import, overwrite, or delete content.
+仓库保存源码、测试、D1 Schema Migration 和部署配置；正式环境中的文章 Markdown、元数据和图片由 D1/R2 保存，不随 Git 提交或网站部署而更新。
+
+仓库根目录的 `content/` 已加入 Git 忽略规则，仅可作为旧文章迁移时的本地输入目录。导入脚本用于迁移，不是在线内容管理系统（CMS）。**`/admin` 后台尚未开发**；目前如需调整文章，可手动操作 Cloudflare 中的数据与对象，注意同步 Markdown 内的媒体链接和 R2 对象 Key。
 
 ```text
 personal-blog/
-├── frontend/              # Vue application
-├── backend/               # retained Express implementation and repository tests
-├── cloudflare/            # Worker, D1 migrations, R2 importer, tests, Wrangler config
-├── scripts/               # retained legacy build and VPS rollback utilities
-├── .github/workflows/     # verification and Cloudflare application deployment
-└── content/               # optional local source, ignored by Git
+├── frontend/            # Vue 站点
+├── backend/             # 保留的 Express 实现及测试（VPS 回退）
+├── cloudflare/          # Worker、D1 Migration、R2 导入工具及测试
+├── scripts/             # 旧版构建及 VPS 回退脚本
+├── .github/workflows/   # 测试和 Cloudflare 自动部署
+└── content/             # 可选的本地迁移来源；不纳入 Git
 ```
 
-Original personal writing and media remain excluded from the MIT License; see
-[CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md).
+## 本地开发
 
-## Local development
-
-Node.js 22 or later is required.
+需要 Node.js 22 或更新版本。
 
 ```bash
 cd frontend && npm ci
@@ -58,66 +50,36 @@ cd ../backend && npm ci
 cd ../cloudflare && npm ci
 
 npm run db:migrate:local
-node scripts/import-content.mjs --local \
-  --content-root /absolute/path/to/content
-
-# Put a disposable STATS_HASH_SECRET in an ignored .dev.vars file first.
+# 在被 Git 忽略的 cloudflare/.dev.vars 中设置仅用于开发的 STATS_HASH_SECRET
 npm run dev
 ```
 
-The complete Cloudflare application is then available at
-`http://127.0.0.1:8787`. Local Wrangler state, environment files, account
-selection, build output, dependencies, and `content/` are ignored by Git.
+在 http://127.0.0.1:8787 访问完整的本地 Cloudflare 站点。
 
-The retained Express backend can still be run locally when an external
-`content/` directory is present, but it is no longer the production application
-deployment target.
-
-## Content migration
-
-The importer accepts an explicit external source directory and never modifies
-or deletes its Markdown or media files:
+如果需要导入本地文章数据，先准备仓库外的内容目录，再按需执行：
 
 ```bash
 cd cloudflare
-
-node scripts/import-content.mjs --dry-run \
-  --content-root /absolute/path/to/content
-
-node scripts/import-content.mjs --remote --confirm-remote \
-  --env preview \
-  --bucket personal-blog-content-preview \
+node scripts/import-content.mjs --dry-run --content-root /absolute/path/to/content
+node scripts/import-content.mjs --local --persist-to .wrangler/state \
   --content-root /absolute/path/to/content
 ```
 
-Production imports are deliberately manual and must explicitly target the
-Production environment and bucket. Repeated imports use deterministic D1 keys
-and R2 object keys and do not create duplicate articles.
+上述本地导入不操作生产 D1/R2。环境变量、凭据、本地 Wrangler 状态、构建产物及内容目录均不应提交至 Git。旧 Express 后端可供回退测试，但不再承担生产部署。
 
-See [cloudflare/README.md](./cloudflare/README.md) for schema, media rules,
-Preview/Production resources, and rollback procedures.
+更多数据库模型、媒体路径与操作说明见 [Cloudflare 技术文档](./cloudflare/README.md)。
 
-## Continuous integration and deployment
+## 持续集成与部署
 
-`.github/workflows/ci.yml` has two boundaries:
+[GitHub Actions](./.github/workflows/ci.yml) 将应用代码与文章内容的生命周期分开：
 
-- Every branch push and pull request installs dependencies, runs Express and
-  Cloudflare tests, builds the Production Cloudflare frontend, verifies its
-  indexing metadata, and runs a Wrangler deployment dry-run.
-- Only a successful `main` push, or a manual dispatch on `main`, applies pending
-  D1 schema migrations and deploys the Worker and Static Assets.
+- 分支 Push 和 Pull Request：安装依赖、运行 Express/Worker 测试、构建生产前端并检查 Wrangler 部署配置。
+- `main` 分支 Push 或该分支的手动触发：验证通过后部署生产 Worker 和静态资源。
+- **不会自动迁移 D1 Schema、导入文章、上传 R2 媒体或修改 VPS。** 数据库结构变更需要按需单独执行，文章更新也不需要重新部署应用。
 
-CI never imports article content, uploads R2 media, connects to the VPS, or
-removes the VPS service. Production deployment requires these GitHub Actions
-secrets:
+生产部署使用 GitHub Actions Secrets：`CLOUDFLARE_API_TOKEN` 与 `CLOUDFLARE_ACCOUNT_ID`。切勿将凭据写入仓库或日志。
 
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-
-Neither value belongs in Git, Wrangler configuration, workflow logs, or local
-tracked files.
-
-## Validation
+### 手动验证
 
 ```bash
 cd backend && npm test
@@ -127,15 +89,12 @@ npx wrangler deploy --dry-run --env production \
   --outdir .wrangler/dry-run-production
 ```
 
-Production currently uses **Worker Custom Domains** for `ningaloha.com` and
-`www.ningaloha.com` (`custom_domain: true` in Wrangler), **not** Worker Routes.
-The previous DNS-only rollback instructions are therefore not valid. Keep the
-VPS ready until Cloudflare cutover is verified, and prepare an explicit DNS / Custom
-Domain rollback with the current Cloudflare zone records before production changes.
-Do not assume that removing the Wrangler routes automatically restores the VPS.
+## 域名与回退
 
-## License
+生产站点的 `ningaloha.com` 与 `www.ningaloha.com` 在 `cloudflare/wrangler.jsonc` 中配置为 **Worker Custom Domains**（`custom_domain: true`），不是普通 Worker Routes。
 
-Application source code and project documentation are available under the MIT
-License. Original personal writing, article media, and the personal avatar are
-not covered by that license; see [CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md).
+如果需要恢复 VPS，必须先核对 Cloudflare 当前的 Custom Domain 关联与 DNS 记录，再解除相应关联、恢复正确的 VPS 源站记录，并验证两个域名的 HTTPS 访问。**单纯删除 Wrangler 中的域名声明，不保证请求自动回到 VPS。**
+
+## 许可
+
+程序源码与项目文档采用 [MIT License](./LICENSE)。原创文章、文章媒体和个人头像**不包含**在 MIT 许可范围内；详见 [CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md)。
