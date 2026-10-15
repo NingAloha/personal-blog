@@ -3,7 +3,7 @@ import {
   chooseLocalizedVariant,
   compareContentItems,
   normalizeContentSlug,
-} from '../../backend/lib/content-model.mjs'
+} from '../../shared/content-model.mjs'
 
 export const CONTENT_LOCALE = Symbol('contentLocale')
 

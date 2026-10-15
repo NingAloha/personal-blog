@@ -1,5 +1,5 @@
 import MarkdownIt from 'markdown-it'
-import { normalizeLocale } from '../../backend/lib/content-model.mjs'
+import { normalizeLocale } from '../../shared/content-model.mjs'
 import { siteConfig } from '../../frontend/src/config/site.js'
 import { materializeMediaUrls } from './media.js'
 

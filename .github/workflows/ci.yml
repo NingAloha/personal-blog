@@ -27,13 +27,8 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: |
-            backend/package-lock.json
             cloudflare/package-lock.json
             frontend/package-lock.json
-
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm ci
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -42,10 +37,6 @@ jobs:
       - name: Install Cloudflare dependencies
         working-directory: cloudflare
         run: npm ci
-
-      - name: Test Express backend
-        working-directory: backend
-        run: npm test
 
       - name: Test Cloudflare Worker
         working-directory: cloudflare
