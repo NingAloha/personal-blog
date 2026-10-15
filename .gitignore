@@ -4,6 +4,9 @@
 # os files
 .DS_Store
 
+# content lives in Cloudflare D1/R2 and is managed outside this repository
+/content/
+
 # runtime / secrets
 backend/data/stats.json
 

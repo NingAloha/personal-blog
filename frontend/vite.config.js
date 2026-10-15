@@ -53,19 +53,22 @@ function cloudflarePublicAssetsPlugin() {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const cloudflarePreview = mode === 'cloudflare-preview'
+  const cloudflareProduction = mode === 'cloudflare-production'
+  const cloudflare = cloudflarePreview || cloudflareProduction
+  const cloudflareSiteUrl = cloudflarePreview ? 'https://test.ningaloha.com' : siteConfig.siteUrl
   return {
-    define: cloudflarePreview ? {
-      'import.meta.env.VITE_SITE_URL': JSON.stringify('https://test.ningaloha.com'),
+    define: cloudflare ? {
+      'import.meta.env.VITE_SITE_URL': JSON.stringify(cloudflareSiteUrl),
     } : undefined,
-    publicDir: cloudflarePreview ? false : 'public',
+    publicDir: cloudflare ? false : 'public',
     plugins: [
       vue(),
-      siteMetadataPlugin(cloudflarePreview ? {
-        siteUrl: 'https://test.ningaloha.com',
-        robots: 'noindex,nofollow',
+      siteMetadataPlugin(cloudflare ? {
+        siteUrl: cloudflareSiteUrl,
+        robots: cloudflarePreview ? 'noindex,nofollow' : 'index,follow,max-image-preview:large',
         cloudflare: true,
       } : undefined),
-      ...(cloudflarePreview ? [cloudflarePublicAssetsPlugin()] : []),
+      ...(cloudflare ? [cloudflarePublicAssetsPlugin()] : []),
     ],
     server: {
       proxy: {

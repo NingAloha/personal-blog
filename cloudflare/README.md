@@ -1,8 +1,8 @@
-# Cloudflare-native Preview
+# Cloudflare-native application
 
-This directory contains the independently deployable Cloudflare Preview stack.
-The Express/Caddy/VPS production deployment remains a separate build and is not
-replaced by these commands.
+This directory contains the Cloudflare Preview and Production application. The
+Express/Caddy/VPS deployment remains online as a rollback origin but is not a
+target of the current CI/CD workflow.
 
 ## Architecture
 
@@ -13,7 +13,7 @@ Markdown migration source
   -> R2: media under deterministic content/... keys
 
 Browser or crawler
-  -> one Preview Worker at test.ningaloha.com
+  -> Preview or Production Worker
        -> Workers Static Assets for the Vue client
        -> D1 for content, localization, and visitor counters
        -> R2 for /api/media/content/...
@@ -58,9 +58,10 @@ not put it in committed configuration or an environment file.
 
 ## Static frontend and dynamic SEO
 
-`npm run build:frontend` runs Vite in `cloudflare-preview` mode. The output uses
-same-origin `/api` requests and excludes repository Markdown, generated VPS
-sitemaps, and production-only public files. The Worker injects D1-backed titles,
+`npm run build:frontend:preview` and `npm run build:frontend:production` select
+environment-specific metadata and indexing policy. Both outputs use same-origin
+`/api` requests and exclude local Markdown, legacy generated sitemaps, and
+production-only public files. The Worker injects D1-backed titles,
 descriptions, canonical and alternate links, language metadata, JSON-LD, and
 rendered Markdown into navigation responses. `/sitemap.xml` is generated from
 the active D1 variants, so content changes do not require a Git commit or
@@ -85,10 +86,12 @@ npm run content:import:local
 npm run dev
 ```
 
-The complete site is then served at `http://127.0.0.1:8787`. Local Wrangler
-state, `.dev.vars*`, `.env*`, credentials, and account selection are ignored by
-Git. The ordinary frontend `npm run build` and Express server remain the VPS
-path.
+The complete site is then served at `http://127.0.0.1:8787`. Supply an external
+content directory with `--content-root` when the ignored root `content/`
+directory is not present. Local Wrangler state, `.dev.vars*`, `.env*`,
+credentials, account selection, and content sources are ignored by Git. The
+ordinary frontend `npm run build` and Express server are retained only for the
+VPS rollback path.
 
 ## Repeatable content import
 
@@ -139,10 +142,40 @@ Existing Preview resources:
 The production Worker, database, and bucket are not created or modified by
 these Preview commands. Never target the unrelated `matrix-media` bucket.
 
-## Production boundary
+## Production deployment
 
-Repository sitemap/prerender scripts remain authoritative for the current VPS
-site and are intentionally unchanged. Cloudflare dynamic SEO is authoritative
-only for the Cloudflare deployment. Promoting it to `ningaloha.com`, importing
-VPS statistics, enabling indexing, or retiring Express/Caddy are separate
-future decisions requiring explicit review.
+Cloudflare dynamic SEO, D1 content, and R2 media are authoritative for the
+public Production site. Repository sitemap/prerender scripts remain available
+only for the unchanged VPS rollback origin.
+
+The Cloudflare frontend has separate build modes so Preview metadata cannot be
+published to Production accidentally:
+
+```text
+npm run build:frontend:preview
+npm run build:frontend:production
+```
+
+After creating and binding isolated Production D1/R2 resources, initialize and
+validate them before attaching the root domain:
+
+```text
+npx wrangler d1 migrations apply CONTENT_DB --remote --env production
+node scripts/import-content.mjs --remote --confirm-remote \
+  --env production --bucket personal-blog-content-production
+npm run deploy:production
+```
+
+Set `STATS_HASH_SECRET` with `wrangler secret put` and seed any approved legacy
+counter values directly in Production D1. Do not copy Preview counters. Keep the
+VPS and its DNS values available until the Cloudflare deployment has been
+validated and the root-domain cutover is explicitly approved.
+
+Production uses Worker Routes for both `ningaloha.com/*` and
+`www.ningaloha.com/*`. The existing proxied DNS records remain in place, while
+the Production `workers.dev` and Preview URL endpoints are disabled. This keeps
+the cutover reversible: for an emergency rollback, remove the two Production
+routes from `wrangler.jsonc` and redeploy the Production environment. Requests
+then return to the unchanged VPS origin without a DNS migration or propagation
+delay. Do not delete the VPS or its DNS records until the Cloudflare deployment
+has completed an appropriate observation period.

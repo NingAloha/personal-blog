@@ -53,6 +53,17 @@
 		},
 		"production": {
 			"name": "personal-blog-content-api-production",
+			"workers_dev": false,
+			"routes": [
+				{
+					"pattern": "ningaloha.com/*",
+					"zone_name": "ningaloha.com"
+				},
+				{
+					"pattern": "www.ningaloha.com/*",
+					"zone_name": "ningaloha.com"
+				}
+			],
 			"vars": {
 				"PUBLIC_SITE_URL": "https://ningaloha.com",
 				"PREVIEW_MODE": "false"
@@ -60,7 +71,8 @@
 			"d1_databases": [
 				{
 					"binding": "CONTENT_DB",
-					"migrations_dir": "migrations"
+					"migrations_dir": "migrations",
+					"database_id": "5ec109a7-132f-4654-8cee-8dbf8c6ea5bc"
 				}
 			],
 			"r2_buckets": [

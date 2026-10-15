@@ -2,20 +2,19 @@ name: CI/CD
 
 on:
   push:
-    branches:
-      - main
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build release
+  verify:
+    name: Test and build
     runs-on: ubuntu-22.04
     concurrency:
-      group: personal-blog-build-${{ github.ref }}
-      cancel-in-progress: ${{ github.event_name == 'push' }}
+      group: personal-blog-verify-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
     steps:
       - name: Checkout repository
@@ -27,143 +26,106 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: |
-            frontend/package-lock.json
             backend/package-lock.json
+            cloudflare/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
 
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
 
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
+      - name: Install Cloudflare dependencies
+        working-directory: cloudflare
+        run: npm ci
 
-      - name: Verify frontend build
-        run: test -f frontend/dist/index.html
-
-      - name: Install backend production dependencies
+      - name: Test Express backend
         working-directory: backend
-        run: npm ci --omit=dev
+        run: npm test
 
-      - name: Package immutable release
+      - name: Test Cloudflare Worker
+        working-directory: cloudflare
+        run: npm test
+
+      - name: Build Cloudflare production frontend
+        working-directory: cloudflare
+        run: npm run build:frontend:production
+
+      - name: Verify production frontend metadata
         shell: bash
         run: |
           set -euo pipefail
-          release_dir=release
-          archive="personal-blog-${GITHUB_SHA}.tar.gz"
+          test -f frontend/dist/index.html
+          grep -Fq 'https://ningaloha.com/' frontend/dist/index.html
+          grep -Fq 'index,follow,max-image-preview:large' frontend/dist/index.html
+          if grep -Fq 'test.ningaloha.com' frontend/dist/index.html; then
+            echo 'Preview URL found in the production frontend build' >&2
+            exit 1
+          fi
+          if grep -Fq 'noindex' frontend/dist/index.html; then
+            echo 'Preview indexing policy found in the production frontend build' >&2
+            exit 1
+          fi
 
-          mkdir -p "${release_dir}/frontend" "${release_dir}/backend"
-          cp -a frontend/dist "${release_dir}/frontend/dist"
-          cp -a content "${release_dir}/content"
-          rsync -a \
-            --exclude='/.env' \
-            --exclude='/data/' \
-            backend/ "${release_dir}/backend/"
-
-          test -f "${release_dir}/frontend/dist/index.html"
-          test -f "${release_dir}/backend/server.js"
-          test -d "${release_dir}/content"
-          test -d "${release_dir}/backend/node_modules"
-          (
-            cd "${release_dir}/backend"
-            node --check server.js
-          )
-
-          tar -czf "${archive}" -C "${release_dir}" frontend backend content
-          tar -tzf "${archive}" > archive-contents.txt
-          grep -qx 'frontend/dist/index.html' archive-contents.txt
-          grep -qx 'backend/server.js' archive-contents.txt
-          grep -qx 'backend/package.json' archive-contents.txt
-          grep -q '^content/' archive-contents.txt
-          grep -q '^backend/node_modules/' archive-contents.txt
-
-      - name: Upload release artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: personal-blog-release-${{ github.sha }}
-          path: personal-blog-${{ github.sha }}.tar.gz
-          if-no-files-found: error
-          retention-days: 7
+      - name: Validate Cloudflare production deployment
+        working-directory: cloudflare
+        run: npx wrangler deploy --dry-run --env production --outdir .wrangler/dry-run-production
 
   deploy:
-    name: Deploy production
+    name: Deploy Cloudflare production
     if: >
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    needs: build
+    needs: verify
     runs-on: ubuntu-22.04
     concurrency:
       group: personal-blog-production
       cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
     steps:
-      - name: Checkout deployment script
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download release artifact
-        uses: actions/download-artifact@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          name: personal-blog-release-${{ github.sha }}
-          path: .
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            cloudflare/package-lock.json
+            frontend/package-lock.json
 
-      - name: Verify downloaded release artifact
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Cloudflare dependencies
+        working-directory: cloudflare
+        run: npm ci
+
+      - name: Verify Cloudflare credentials
         shell: bash
         run: |
           set -euo pipefail
-          test -f "personal-blog-${GITHUB_SHA}.tar.gz"
-          cp scripts/deploy-release.sh deploy-release.sh
+          test -n "${CLOUDFLARE_API_TOKEN:-}" || {
+            echo 'Missing GitHub Actions secret: CLOUDFLARE_API_TOKEN' >&2
+            exit 1
+          }
+          test -n "${CLOUDFLARE_ACCOUNT_ID:-}" || {
+            echo 'Missing GitHub Actions secret: CLOUDFLARE_ACCOUNT_ID' >&2
+            exit 1
+          }
 
-      - name: Prepare server incoming directory
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          fingerprint: ${{ vars.SERVER_SSH_FINGERPRINT }}
-          script: |
-            set -eu
-            mkdir -p "/srv/personal-blog/.incoming/${{ github.sha }}"
+      - name: Apply D1 schema migrations
+        working-directory: cloudflare
+        run: npx wrangler d1 migrations apply CONTENT_DB --remote --env production
 
-      - name: Upload release and deployment script
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          fingerprint: ${{ vars.SERVER_SSH_FINGERPRINT }}
-          source: personal-blog-${{ github.sha }}.tar.gz,deploy-release.sh
-          target: /srv/personal-blog/.incoming/${{ github.sha }}
-          overwrite: true
-
-      - name: Switch production release
-        uses: appleboy/ssh-action@v1
-        env:
-          SITE_URL: ${{ vars.SITE_URL }}
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          fingerprint: ${{ vars.SERVER_SSH_FINGERPRINT }}
-          envs: SITE_URL
-          script: |
-            set -eu
-            : "${SITE_URL:?Repository Variable SITE_URL is required}"
-            bash "/srv/personal-blog/.incoming/${{ github.sha }}/deploy-release.sh" \
-              "${{ github.sha }}" \
-              "/srv/personal-blog/.incoming/${{ github.sha }}/personal-blog-${{ github.sha }}.tar.gz"
-
-      - name: Clean successful incoming upload
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          fingerprint: ${{ vars.SERVER_SSH_FINGERPRINT }}
-          script: |
-            set -eu
-            incoming_dir="/srv/personal-blog/.incoming/${{ github.sha }}"
-            rm -f -- "${incoming_dir}/deploy-release.sh"
-            rm -f -- "${incoming_dir}/personal-blog-${{ github.sha }}.tar.gz"
-            if ! rmdir "${incoming_dir}"; then
-              echo "Warning: incoming directory is not empty: ${incoming_dir}" >&2
-            fi
+      - name: Deploy Worker and Static Assets
+        working-directory: cloudflare
+        run: npm run deploy:production
