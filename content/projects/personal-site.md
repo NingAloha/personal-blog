@@ -18,10 +18,10 @@ featured: false
 当前仓库采用前后端分离结构：
 
 - `frontend/`：Vue 3 + Vite 前端应用，负责页面渲染与交互
-- `backend/`：Express API 服务，按请求读取 `backend/content/` 中的 Markdown
-- `backend/content/projects/`：项目内容
-- `backend/content/essays/`：随笔内容
-- `backend/content/tech-blogs/`：技术文章内容
+- `backend/`：Express API 服务，按请求读取 `content/` 中的 Markdown
+- `content/projects/`：项目内容
+- `content/essays/`：随笔内容
+- `content/tech-blogs/`：技术文章内容
 
 这套结构的核心价值是“内容与渲染解耦”：改内容主要改 Markdown，改体验主要改前端。
 
@@ -66,7 +66,7 @@ featured: false
 
 这轮优化的目标是“保证可收录 + 提升首屏性能 + 稳定发布流程”，主要动作如下：
 
-- 新增 `scripts/generate-sitemap.mjs`，构建时自动根据 `backend/content/**/*.md` 生成站点地图
+- 新增 `scripts/generate-sitemap.mjs`，构建时自动根据 `content/**/*.md` 生成站点地图
 - 统一前端 SEO 注入逻辑（路由级基础 SEO + 详情页内容级 SEO）
 - 修复 `robots.txt` 被 CDN 托管规则干扰导致的工具误判
 - 首页头像补齐尺寸、固定 `1:1` 容器、降低图片体积，并优化首屏渲染占位策略

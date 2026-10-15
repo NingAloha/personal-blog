@@ -6,7 +6,7 @@ import { buildAbsoluteUrl, normalizeSitePath } from '../frontend/src/utils/url.j
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(SCRIPT_DIR, '..')
-const CONTENT_ROOT = join(ROOT, 'backend', 'content')
+const CONTENT_ROOT = join(ROOT, 'content')
 const OUTPUT = join(ROOT, 'frontend', 'public', 'sitemap.xml')
 
 const staticRoutes = [

@@ -14,9 +14,9 @@ material covered by this notice.
 
 This notice applies to original article, essay, and project-writing content,
 including but not limited to:
-- `backend/content/essays/**`
-- `backend/content/tech-blogs/**`
-- `backend/content/projects/**`
+- `content/essays/**`
+- `content/tech-blogs/**`
+- `content/projects/**`
 
 It also applies to the author's personal avatar and other original personal
 media represented by:

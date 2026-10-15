@@ -38,7 +38,7 @@ npm run dev
 
 发布自己的站点前，请替换或更新：
 
-- `backend/content/**` 下的原作者文章与项目内容。
+- `content/**` 下的原作者文章与项目内容。
 - `frontend/public/avatar.jpg` 中的个人头像。
 - `frontend/src/config/site.js` 中的主要站点信息：域名、站点标题、作者名、GitHub
   地址与 description。
@@ -62,15 +62,15 @@ npm run dev
 
 ```
 personal_blog/
+├── content/           # Markdown 内容与内容资源
+│   ├── projects/       # 项目 Markdown 文件
+│   ├── essays/         # 随笔 Markdown 文件
+│   └── tech-blogs/     # 技术博客 Markdown 文件
 ├── frontend/          # Vue 3 前端项目
 │   ├── src/
 │   └── public/        # 静态资源（如 avatar.jpg 放这里）
 ├── backend/           # Express API 服务
-│   ├── server.js
-│   └── content/
-│       ├── projects/  # 项目 Markdown 文件
-│       ├── essays/    # 随笔 Markdown 文件
-│       └── tech-blogs/# 技术博客 Markdown 文件
+│   └── server.js
 ├── scripts/
 │   ├── generate-sitemap.mjs  # 根据 Markdown 内容自动生成 sitemap.xml
 │   └── prerender-static.mjs  # 构建后预渲染静态路由
@@ -83,7 +83,7 @@ personal_blog/
 
 ## 当前能力（简述）
 
-- 内容：`backend/content/**.md`（front matter + 正文）
+- 内容：`content/**.md`（front matter + 正文）
 - 主题：浅色/黑夜切换（本地持久化）
 - 语言：UI 结构支持中/英切换（浏览器默认 + 本地持久化）
 - 技术博客：支持内容级中英文切换；中文读取 `.md`，英文优先读取同名 `.en.md`，缺失时自动回退中文
@@ -94,7 +94,7 @@ personal_blog/
 
 ## 内容维护（写作/更新）
 
-新增/修改内容只需要编辑 `backend/content/` 下的 Markdown；后端按请求实时读取，一般不需要重启。
+新增/修改内容只需要编辑 `content/` 下的 Markdown；后端按请求实时读取，一般不需要重启。
 
 技术博客如果需要补英文内容，可在同目录新增同名 `.en.md` 文件，例如 `my-tech-post.md` 对应 `my-tech-post.en.md`；两者会被视为同一篇文章。
 
@@ -117,7 +117,7 @@ git push main
   -> backend restart and health checks
 ```
 
-每个 release 同时包含 `frontend/dist`、后端运行时文件、`backend/content` 与后端生产 `node_modules`。内容目录既是预渲染输入，也是 API 的运行时来源，因此它们始终来自同一个 commit。
+每个 release 同时包含 `frontend/dist`、后端运行时文件、根目录的 `content` 与后端生产 `node_modules`。内容目录既是预渲染输入，也是 API 的运行时来源，因此它们始终来自同一个 commit。
 
 服务器目录：
 
@@ -163,7 +163,7 @@ git push main
 
 ### 新增项目（projects）
 
-在 `backend/content/projects/` 下新建一个 `.md` 文件，例如 `my-project.md`：
+在 `content/projects/` 下新建一个 `.md` 文件，例如 `my-project.md`：
 
 ```markdown
 ---
@@ -183,7 +183,7 @@ featured: false
 
 ### 新增随笔（essays）
 
-在 `backend/content/essays/` 下新建一个 `.md` 文件，例如 `my-essay.md`：
+在 `content/essays/` 下新建一个 `.md` 文件，例如 `my-essay.md`：
 
 ```markdown
 ---
@@ -202,7 +202,7 @@ featured: false
 
 ### 新增技术博客（tech-blogs）
 
-在 `backend/content/tech-blogs/` 下新建一个 `.md` 文件，例如 `my-tech-post.md`：
+在 `content/tech-blogs/` 下新建一个 `.md` 文件，例如 `my-tech-post.md`：
 
 ```markdown
 ---
@@ -303,8 +303,8 @@ curl -I https://your-domain.example/sitemap.xml
 本仓库的 MIT License 适用于源代码和项目文档，但
 [CONTENT_COPYRIGHT.md](./CONTENT_COPYRIGHT.md) 中列出的原创个人文字和媒体除外。
 
-`backend/content/**` 下的原创个人文字和其他内容不受 MIT License 授权，保留全部
+`content/**` 下的原创个人文字和其他内容不受 MIT License 授权，保留全部
 权利（All Rights Reserved）。作者的个人头像
 `frontend/public/avatar.jpg` 同样保留全部权利。
 
-若将本仓库作为个人博客模板使用，请删除或替换 `backend/content/**` 下的原作者内容。
+若将本仓库作为个人博客模板使用，请删除或替换 `content/**` 下的原作者内容。

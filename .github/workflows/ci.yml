@@ -54,6 +54,7 @@ jobs:
 
           mkdir -p "${release_dir}/frontend" "${release_dir}/backend"
           cp -a frontend/dist "${release_dir}/frontend/dist"
+          cp -a content "${release_dir}/content"
           rsync -a \
             --exclude='/.env' \
             --exclude='/data/' \
@@ -61,19 +62,19 @@ jobs:
 
           test -f "${release_dir}/frontend/dist/index.html"
           test -f "${release_dir}/backend/server.js"
-          test -d "${release_dir}/backend/content"
+          test -d "${release_dir}/content"
           test -d "${release_dir}/backend/node_modules"
           (
             cd "${release_dir}/backend"
             node --check server.js
           )
 
-          tar -czf "${archive}" -C "${release_dir}" frontend backend
+          tar -czf "${archive}" -C "${release_dir}" frontend backend content
           tar -tzf "${archive}" > archive-contents.txt
           grep -qx 'frontend/dist/index.html' archive-contents.txt
           grep -qx 'backend/server.js' archive-contents.txt
           grep -qx 'backend/package.json' archive-contents.txt
-          grep -q '^backend/content/' archive-contents.txt
+          grep -q '^content/' archive-contents.txt
           grep -q '^backend/node_modules/' archive-contents.txt
 
       - name: Upload release artifact

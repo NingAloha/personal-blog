@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const CONTENT_DIR = join(__dirname, 'content')
+const CONTENT_DIR = join(__dirname, '..', 'content')
 const DATA_DIR = process.env.DATA_DIR || join(__dirname, 'data')
 const STATS_FILE = join(DATA_DIR, 'stats.json')
 const VISIT_DEDUPE_WINDOW_MS = 10 * 60 * 1000
