@@ -1,13 +1,11 @@
 import express from 'express'
 import cors from 'cors'
-import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 'fs'
-import { join, basename } from 'path'
-import matter from 'gray-matter'
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs'
+import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
-import { dirname } from 'path'
+import { contentRepository, normalizeContentSlug } from './lib/content-repository.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const CONTENT_DIR = join(__dirname, '..', 'content')
 const DATA_DIR = process.env.DATA_DIR || join(__dirname, 'data')
 const STATS_FILE = join(DATA_DIR, 'stats.json')
 const VISIT_DEDUPE_WINDOW_MS = 10 * 60 * 1000
@@ -57,87 +55,9 @@ function shouldCountVisit(req, scope) {
   return !lastSeen || now - lastSeen > VISIT_DEDUPE_WINDOW_MS
 }
 
-function normalizeLocale(value) {
-  if (typeof value !== 'string') return 'zh'
-  const lower = value.toLowerCase()
-  return lower.startsWith('en') ? 'en' : 'zh'
-}
-
-function splitLocalizedMarkdownName(file) {
-  const stem = basename(file, '.md')
-  if (stem.endsWith('.en')) {
-    return { slug: stem.slice(0, -3), locale: 'en' }
-  }
-  return { slug: stem, locale: 'zh' }
-}
-
-function sortItems(a, b) {
-  if (a.featured && !b.featured) return -1
-  if (!a.featured && b.featured) return 1
-  const da = a.date || a.startDate || ''
-  const db = b.date || b.startDate || ''
-  return db.localeCompare(da)
-}
-
-const CONTENT_TYPES = new Set(['projects', 'essays', 'tech-blogs'])
-
-function contentDir(type) {
-  if (!CONTENT_TYPES.has(type)) {
-    throw new Error('Unknown content type')
-  }
-  return join(CONTENT_DIR, type)
-}
-
-function readLocalizedVariants(type) {
-  const dir = contentDir(type)
-  const groups = new Map()
-
-  for (const file of readdirSync(dir).filter((f) => f.endsWith('.md'))) {
-    const { slug, locale: fileLocale } = splitLocalizedMarkdownName(file)
-    const variants = groups.get(slug) || {}
-    variants[fileLocale] = join(dir, file)
-    groups.set(slug, variants)
-  }
-
-  return groups
-}
-
-function chooseLocalizedFile(variants, locale) {
-  return locale === 'en' ? (variants.en || variants.zh) : variants.zh
-}
-
-function readMarkdownItem(slug, file, includeContent = false) {
-  const raw = readFileSync(file, 'utf-8')
-  const { data, content } = matter(raw)
-  return includeContent ? { slug, ...data, content } : { slug, ...data }
-}
-
-// All content types use the same base slug. English files are optional and
-// fall back to their Chinese counterpart when no .en.md variant exists.
-function readLocalizedItems(type, locale = 'zh') {
-  const groups = readLocalizedVariants(type)
-  return Array.from(groups.entries())
-    .map(([slug, variants]) => {
-      const file = chooseLocalizedFile(variants, locale)
-      return file ? readMarkdownItem(slug, file) : null
-    })
-    .filter(Boolean)
-    .sort(sortItems)
-}
-
-function readLocalizedItem(type, slug, locale = 'zh') {
-  const normalizedSlug = splitLocalizedMarkdownName(`${slug}.md`).slug
-  const variants = readLocalizedVariants(type).get(normalizedSlug)
-  const file = variants && chooseLocalizedFile(variants, locale)
-  if (!file) {
-    throw new Error('Not found')
-  }
-  return readMarkdownItem(normalizedSlug, file, true)
-}
-
 app.get('/api/projects', (req, res) => {
   try {
-    res.json(readLocalizedItems('projects', normalizeLocale(req.query.lang)))
+    res.json(contentRepository.list('projects', req.query.lang))
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -145,7 +65,7 @@ app.get('/api/projects', (req, res) => {
 
 app.get('/api/projects/:slug', (req, res) => {
   try {
-    res.json(readLocalizedItem('projects', req.params.slug, normalizeLocale(req.query.lang)))
+    res.json(contentRepository.get('projects', req.params.slug, req.query.lang))
   } catch {
     res.status(404).json({ error: 'Not found' })
   }
@@ -154,7 +74,7 @@ app.get('/api/projects/:slug', (req, res) => {
 // ── 随笔 ──
 app.get('/api/essays', (req, res) => {
   try {
-    res.json(readLocalizedItems('essays', normalizeLocale(req.query.lang)))
+    res.json(contentRepository.list('essays', req.query.lang))
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -162,7 +82,7 @@ app.get('/api/essays', (req, res) => {
 
 app.get('/api/essays/:slug', (req, res) => {
   try {
-    res.json(readLocalizedItem('essays', req.params.slug, normalizeLocale(req.query.lang)))
+    res.json(contentRepository.get('essays', req.params.slug, req.query.lang))
   } catch {
     res.status(404).json({ error: 'Not found' })
   }
@@ -171,7 +91,7 @@ app.get('/api/essays/:slug', (req, res) => {
 // ── 技术博客 ──
 app.get('/api/tech-blogs', (req, res) => {
   try {
-    res.json(readLocalizedItems('tech-blogs', normalizeLocale(req.query.lang)))
+    res.json(contentRepository.list('tech-blogs', req.query.lang))
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -179,7 +99,7 @@ app.get('/api/tech-blogs', (req, res) => {
 
 app.get('/api/tech-blogs/:slug', (req, res) => {
   try {
-    res.json(readLocalizedItem('tech-blogs', req.params.slug, normalizeLocale(req.query.lang)))
+    res.json(contentRepository.get('tech-blogs', req.params.slug, req.query.lang))
   } catch {
     res.status(404).json({ error: 'Not found' })
   }
@@ -213,7 +133,7 @@ app.post('/api/stats/site/visit', (req, res) => {
 app.get('/api/stats/article/:slug', (req, res) => {
   try {
     const stats = readStats()
-    const slug = splitLocalizedMarkdownName(`${req.params.slug}.md`).slug
+    const slug = normalizeContentSlug(req.params.slug)
     res.set('Cache-Control', 'no-store')
     res.json({ slug, views: stats.articleViews?.[slug] || 0 })
   } catch (e) {
@@ -224,7 +144,7 @@ app.get('/api/stats/article/:slug', (req, res) => {
 app.post('/api/stats/article/:slug/visit', (req, res) => {
   try {
     const stats = readStats()
-    const slug = splitLocalizedMarkdownName(`${req.params.slug}.md`).slug
+    const slug = normalizeContentSlug(req.params.slug)
     let counted = false
     if (shouldCountVisit(req, `article:${slug}`)) {
       stats.articleViews = stats.articleViews || {}

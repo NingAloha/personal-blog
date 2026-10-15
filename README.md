@@ -70,6 +70,7 @@ personal_blog/
 │   ├── src/
 │   └── public/        # 静态资源（如 avatar.jpg 放这里）
 ├── backend/           # Express API 服务
+│   ├── lib/            # 内容读取与解析模块
 │   └── server.js
 ├── scripts/
 │   ├── generate-sitemap.mjs  # 根据 Markdown 内容自动生成 sitemap.xml
