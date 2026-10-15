@@ -1,86 +1,86 @@
 {
-	"$schema": "./node_modules/wrangler/config-schema.json",
-	"name": "personal-blog-content-api-local",
-	"main": "src/worker.js",
-	"compatibility_date": "2026-10-15",
-	"assets": {
-		"directory": "../frontend/dist",
-		"binding": "ASSETS",
-		"run_worker_first": true
-	},
-	"vars": {
-		"PUBLIC_SITE_URL": "http://127.0.0.1:8787",
-		"PREVIEW_MODE": "true"
-	},
-	"d1_databases": [
-		{
-			"binding": "CONTENT_DB",
-			"migrations_dir": "migrations"
-		}
-	],
-	"r2_buckets": [
-		{
-			"binding": "CONTENT_MEDIA",
-			"bucket_name": "personal-blog-content-local"
-		}
-	],
-	"env": {
-		"preview": {
-			"name": "personal-blog-content-api-preview",
-			"routes": [
-				{
-					"pattern": "test.ningaloha.com",
-					"custom_domain": true
-				}
-			],
-			"vars": {
-				"PUBLIC_SITE_URL": "https://test.ningaloha.com",
-				"PREVIEW_MODE": "true"
-			},
-			"d1_databases": [
-				{
-					"binding": "CONTENT_DB",
-					"migrations_dir": "migrations",
-					"database_id": "30109a6c-a1c7-45cb-8370-13c4fa18934e"
-				}
-			],
-			"r2_buckets": [
-				{
-					"binding": "CONTENT_MEDIA",
-					"bucket_name": "personal-blog-content-preview"
-				}
-			]
-		},
-		"production": {
-			"name": "personal-blog-content-api-production",
-			"workers_dev": false,
-			"routes": [
-				{
-					"pattern": "ningaloha.com/*",
-					"zone_name": "ningaloha.com"
-				},
-				{
-					"pattern": "www.ningaloha.com/*",
-					"zone_name": "ningaloha.com"
-				}
-			],
-			"vars": {
-				"PUBLIC_SITE_URL": "https://ningaloha.com",
-				"PREVIEW_MODE": "false"
-			},
-			"d1_databases": [
-				{
-					"binding": "CONTENT_DB",
-					"migrations_dir": "migrations",
-					"database_id": "5ec109a7-132f-4654-8cee-8dbf8c6ea5bc"
-				}
-			],
-			"r2_buckets": [
-				{
-					"binding": "CONTENT_MEDIA",
-					"bucket_name": "personal-blog-content-production"
-				}
-			]
-		}
-	}
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "personal-blog-content-api-local",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-15",
+  "assets": {
+    "directory": "../frontend/dist",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "vars": {
+    "PUBLIC_SITE_URL": "http://127.0.0.1:8787",
+    "PREVIEW_MODE": "true"
+  },
+  "d1_databases": [
+    {
+      "binding": "CONTENT_DB",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "CONTENT_MEDIA",
+      "bucket_name": "personal-blog-content-local"
+    }
+  ],
+  "env": {
+    "preview": {
+      "name": "personal-blog-content-api-preview",
+      "routes": [
+        {
+          "pattern": "test.ningaloha.com",
+          "custom_domain": true
+        }
+      ],
+      "vars": {
+        "PUBLIC_SITE_URL": "https://test.ningaloha.com",
+        "PREVIEW_MODE": "true"
+      },
+      "d1_databases": [
+        {
+          "binding": "CONTENT_DB",
+          "migrations_dir": "migrations",
+          "database_id": "30109a6c-a1c7-45cb-8370-13c4fa18934e"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "CONTENT_MEDIA",
+          "bucket_name": "personal-blog-content-preview"
+        }
+      ]
+    },
+    "production": {
+      "name": "personal-blog-content-api-production",
+      "workers_dev": false,
+      "routes": [
+        {
+          "pattern": "ningaloha.com",
+          "custom_domain": true
+        },
+        {
+          "pattern": "www.ningaloha.com",
+          "custom_domain": true
+        }
+      ],
+      "vars": {
+        "PUBLIC_SITE_URL": "https://ningaloha.com",
+        "PREVIEW_MODE": "false"
+      },
+      "d1_databases": [
+        {
+          "binding": "CONTENT_DB",
+          "migrations_dir": "migrations",
+          "database_id": "5ec109a7-132f-4654-8cee-8dbf8c6ea5bc"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "CONTENT_MEDIA",
+          "bucket_name": "personal-blog-content-production"
+        }
+      ]
+    }
+  }
 }
