@@ -26,8 +26,9 @@ function detectBrowserLocale() {
 
 export function initLocale() {
   if (typeof window === 'undefined') return
+  const requested = normalizeLocale(new URL(window.location.href).searchParams.get('lang'))
   const saved = normalizeLocale(localStorage.getItem(STORAGE_KEY))
-  locale.value = saved || detectBrowserLocale() || 'zh'
+  locale.value = requested || saved || detectBrowserLocale() || 'zh'
 }
 
 export function setLocale(next) {
@@ -40,6 +41,10 @@ export function setLocale(next) {
   } catch {
     // ignore
   }
+  const url = new URL(window.location.href)
+  if (value === 'en') url.searchParams.set('lang', 'en')
+  else url.searchParams.delete('lang')
+  window.history.replaceState(window.history.state, '', url)
   window.dispatchEvent(new CustomEvent('locale-changed', { detail: { locale: value } }))
 }
 

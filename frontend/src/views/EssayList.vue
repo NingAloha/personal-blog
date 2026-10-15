@@ -15,14 +15,14 @@
       </thead>
       <tbody>
         <tr v-for="e in essays" :key="e.slug">
-          <td class="list-title-cell">
+          <td class="list-title-cell" :data-label="t('list.thTitle')">
             <router-link :to="`/essays/${e.slug}/`">{{ e.title }}</router-link>
           </td>
-          <td class="list-summary-cell">{{ e.summary }}</td>
-          <td>
+          <td class="list-summary-cell" :data-label="t('list.thSummary')">{{ e.summary }}</td>
+          <td :data-label="t('list.thTags')">
             <span v-for="tag in e.tags" :key="tag" class="tag">{{ tag }}</span>
           </td>
-          <td class="list-date-cell">{{ e.date }}</td>
+          <td class="list-date-cell" :data-label="t('list.thDate')">{{ e.date }}</td>
         </tr>
       </tbody>
     </table>

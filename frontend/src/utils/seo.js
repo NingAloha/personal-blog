@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { locale, t } from '../i18n'
 import { siteConfig } from '../config/site.js'
 import { buildAbsoluteUrl, buildAssetUrl } from './url'
 
@@ -53,13 +53,21 @@ function truncate(text, max = 160) {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text
 }
 
-export function applySeo({ title, description, path = '/', type = 'website', image, jsonLd }) {
-  const siteName = getSiteName()
+function localizedPath(path, language = locale.value) {
+  const url = new URL(path, siteConfig.siteUrl)
+  if (language === 'en') url.searchParams.set('lang', 'en')
+  else url.searchParams.delete('lang')
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
+export function applySeo({ title, description, path = '/', type = 'website', image, jsonLd, language = locale.value }) {
+  const siteName = language === 'en' ? siteConfig.siteNameEn : siteConfig.siteName
   const fullTitle = title ? `${title} | ${siteName}` : siteName
-  const canonical = buildAbsoluteUrl(path)
+  const canonical = buildAbsoluteUrl(localizedPath(path, language))
   const desc = truncate(description)
   const ogImage = image || buildAssetUrl(siteConfig.avatarPath)
 
+  document.documentElement.lang = language === 'en' ? 'en' : 'zh-CN'
   document.title = fullTitle
   setCanonical(canonical)
 
@@ -79,8 +87,8 @@ export function applySeo({ title, description, path = '/', type = 'website', ima
   setJsonLd(jsonLd || null)
 }
 
-export function buildArticleJsonLd({ title, summary, path, datePublished, tags, articleType = 'Article' }) {
-  const url = buildAbsoluteUrl(path)
+export function buildArticleJsonLd({ title, summary, path, datePublished, tags, articleType = 'Article', language = locale.value }) {
+  const url = buildAbsoluteUrl(localizedPath(path, language))
   return {
     '@context': 'https://schema.org',
     '@type': articleType,
@@ -90,6 +98,7 @@ export function buildArticleJsonLd({ title, summary, path, datePublished, tags, 
     dateModified: datePublished,
     mainEntityOfPage: url,
     url,
+    inLanguage: language === 'en' ? 'en' : 'zh-CN',
     author: {
       '@type': 'Person',
       name: siteConfig.authorName,

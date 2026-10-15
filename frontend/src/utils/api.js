@@ -5,7 +5,12 @@ const CONTENT_API_BASE = (import.meta.env.VITE_CONTENT_API_BASE_URL || APP_API_B
 async function get(base, path) {
   const res = await fetch(`${base}${path}`)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json()
+  const data = await res.json()
+  const contentLanguage = res.headers.get('Content-Language')
+  if (contentLanguage && data && !Array.isArray(data) && typeof data === 'object') {
+    Object.defineProperty(data, 'contentLanguage', { value: contentLanguage })
+  }
+  return data
 }
 
 async function post(path) {

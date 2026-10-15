@@ -69,6 +69,7 @@ test('Worker exposes compatible list and detail responses', async () => {
   )
   const detail = await detailResponse.json()
   assert.equal(detailResponse.status, 200)
+  assert.equal(detailResponse.headers.get('content-language'), 'en')
   assert.equal(detail.slug, 'demo')
   assert.match(detail.content, /https:\/\/content\.example\/api\/media\//)
 })

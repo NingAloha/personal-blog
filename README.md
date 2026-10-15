@@ -94,16 +94,16 @@ personal_blog/
 - 构建：自动生成 `frontend/public/sitemap.xml` + 预渲染静态路由到 `frontend/dist/`
 - 统计：站点访问量 + 文章阅读量（可选；通过 `DATA_DIR` 做持久化）
 
-## Cloudflare-native 内容链路（独立预览）
+## Cloudflare-native Preview（独立预览）
 
-`cloudflare-native` 分支包含一条可独立运行的 Cloudflare 内容链路：D1 保存文章与
-中英文变体，R2 保存文章媒体，Worker 提供与现有内容 API 兼容的只读接口。前端只有
-在显式设置 `VITE_CONTENT_API_BASE_URL` 时才使用该接口；默认构建和现有 VPS
-生产发布保持不变，访问统计仍由 Express 提供。
+`cloudflare-native` 分支包含一套可独立运行的 Preview：Workers Static Assets 托管
+Vue 前端，D1 保存文章和独立访客统计，R2 保存文章媒体，Worker 提供兼容 API、D1
+动态文章 HTML 与 sitemap。Preview 使用 `test.ningaloha.com`，并通过响应头和
+`robots.txt` 禁止索引；它不会替换或部署到当前 Express/VPS 生产站。
 
-本地初始化、导入、测试以及未来远程 preview 资源的配置步骤见
-[`cloudflare/README.md`](./cloudflare/README.md)。当前 sitemap 与静态预渲染仍直接
-读取仓库 Markdown；在 D1 成为唯一内容源之前，仍需单独完成并验证 SEO 构建链迁移。
+本地验证、内容导入、统计密钥和 Preview 部署步骤见
+[`cloudflare/README.md`](./cloudflare/README.md)。生产 sitemap 与静态预渲染流程仍
+保持原样。
 
 ## 内容维护（写作/更新）
 

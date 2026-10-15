@@ -4,15 +4,18 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --persist-to .wrangler/state",
+    "build:frontend": "npm --prefix ../frontend run build:cloudflare",
+    "dev": "npm run build:frontend && wrangler dev --persist-to .wrangler/state",
     "db:migrate:local": "wrangler d1 migrations apply CONTENT_DB --local --persist-to .wrangler/state",
     "content:validate": "node scripts/import-content.mjs --dry-run",
     "content:import:local": "node scripts/import-content.mjs --local --persist-to .wrangler/state",
     "test": "node --test",
-    "check": "wrangler deploy --dry-run --env=\"\" --outdir .wrangler/dry-run"
+    "check": "npm run build:frontend && wrangler deploy --dry-run --env=\"\" --outdir .wrangler/dry-run",
+    "deploy:preview": "npm run build:frontend && wrangler deploy --env preview"
   },
   "dependencies": {
-    "@11ty/gray-matter": "^3.0.0"
+    "@11ty/gray-matter": "^3.0.0",
+    "markdown-it": "^14.1.1"
   },
   "devDependencies": {
     "wrangler": "^4.151.0"

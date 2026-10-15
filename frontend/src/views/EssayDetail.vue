@@ -53,6 +53,7 @@ async function load(slug) {
       description: essay.value.summary,
       path,
       type: 'article',
+      language: essay.value.contentLanguage,
       jsonLd: buildArticleJsonLd({
         title: essay.value.title,
         summary: essay.value.summary,
@@ -60,6 +61,7 @@ async function load(slug) {
         datePublished: essay.value.date,
         tags: essay.value.tags,
         articleType: 'Article',
+        language: essay.value.contentLanguage,
       }),
     })
     scheduleLowPriority(async () => {
