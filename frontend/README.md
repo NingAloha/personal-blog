@@ -1,29 +1,23 @@
 # Frontend
 
-Vue 3 and Vite client for the personal blog.
+Vue 3 and Vite client for the personal blog, deployed with Cloudflare Workers Static Assets.
 
-## Cloudflare builds
+## Production build
 
 ```bash
-npm run build:cloudflare:preview
+npm ci
 npm run build:cloudflare:production
 ```
 
-Both builds use same-origin `/api` requests and exclude the ignored local
-article source. Preview emits `test.ningaloha.com` metadata with `noindex`;
-Production emits `ningaloha.com` metadata with normal indexing enabled.
+The production build uses same-origin `/api` requests and does not bundle article Markdown. The Cloudflare Worker produces article HTML, localized metadata, sitemap, and R2 media URLs from D1/R2 at request time.
 
-Article HTML, localized metadata, sitemap, and media URLs are produced by the
-Cloudflare Worker from D1 and R2 at request time.
+## Local development
 
-## Legacy local/VPS build
+For the complete application, use Wrangler from the [Cloudflare directory](../cloudflare/README.md):
 
 ```bash
+cd ../cloudflare
 npm run dev
-npm run build
-npm run preview
 ```
 
-The legacy build and prerender scripts require an external root `content/`
-directory. They remain available for the unchanged Express/Caddy/VPS rollback
-origin but are not used by the current CI production deployment.
+This serves the built frontend and Worker APIs at http://127.0.0.1:8787. For frontend-only Vite development, `npm run dev` remains available, but its `/api` proxy points to `http://localhost:3000` as currently configured in `vite.config.js`; use Wrangler to exercise the Cloudflare stack.
