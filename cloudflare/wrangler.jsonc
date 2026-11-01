@@ -52,7 +52,7 @@
       ]
     },
     "production": {
-      "name": "personal-blog-content-api-production",
+      "name": "personal-blog",
       "workers_dev": false,
       "routes": [
         {
